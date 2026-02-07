@@ -5,27 +5,27 @@ import gleam/result
 
 import internal/gb_tree.{type GbTree}
 
-pub type SearchContainer(c, v) {
+pub type SearchContainer(v) {
   Stack(List(v))
   Queue(Deque(v))
-  LIFOHeap(GbTree(c, List(v)))
+  LIFOHeap(GbTree(Int, List(v)))
 }
 
 pub fn pop(
-  sc: SearchContainer(c, v),
-) -> Result(#(v, SearchContainer(c, v)), Nil) {
+  sc: SearchContainer(v),
+) -> Result(#(#(v, Int), SearchContainer(v)), Nil) {
   case sc {
     Stack(list) -> {
       case list {
-        [head, ..tail] -> Ok(#(head, Stack(tail)))
+        [head, ..tail] -> Ok(#(#(head, 0), Stack(tail)))
         [] -> Error(Nil)
       }
     }
     Queue(queue) -> {
       deque.pop_front(queue)
-      |> result.map(fn(t) {
-        let #(a, queue) = t
-        #(a, Queue(queue))
+      |> result.map(fn(tuple) {
+        let #(value, queue) = tuple
+        #(#(value, 0), Queue(queue))
       })
     }
     LIFOHeap(tree) -> {
@@ -35,11 +35,11 @@ pub fn pop(
           case value {
             #(cost, [head]) -> {
               let next_heap = tree |> gb_tree.delete(cost) |> LIFOHeap()
-              Ok(#(head, next_heap))
+              Ok(#(#(head, cost), next_heap))
             }
             #(cost, [head, ..tail]) -> {
               let next_heap = tree |> gb_tree.insert(cost, tail) |> LIFOHeap()
-              Ok(#(head, next_heap))
+              Ok(#(#(head, cost), next_heap))
             }
             #(cost, []) -> {
               // logically, this should be unreachable
@@ -55,11 +55,8 @@ pub fn pop(
   }
 }
 
-pub fn push(
-  sc: SearchContainer(c, v),
-  cost: c,
-  value: v,
-) -> SearchContainer(c, v) {
+pub fn push(sc: SearchContainer(v), assoc: #(v, Int)) -> SearchContainer(v) {
+  let #(value, cost) = assoc
   case sc {
     Stack(list) -> value |> list.prepend(list, _) |> Stack()
     Queue(queue) -> value |> deque.push_back(queue, _) |> Queue()
