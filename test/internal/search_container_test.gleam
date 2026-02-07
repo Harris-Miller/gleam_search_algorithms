@@ -1,8 +1,8 @@
 import gleam/deque
 import gleeunit
 import gleeunit/should
-import internal/container.{LIFOHeap, Queue, Stack, pop, push}
 import internal/gb_tree as gb
+import internal/search_container.{LIFOHeap, Queue, Stack, pop, push}
 
 pub fn main() {
   gleeunit.main()
@@ -72,15 +72,15 @@ pub fn lifo_heap_pop_test() {
     |> push(2, "x")
     |> push(1, "a")
     |> push(2, "y")
-  // |> push(1, "b")
+    |> push(1, "b")
 
-  // let assert Ok(#(b, heap)) = pop(heap)
+  let assert Ok(#(b, heap)) = pop(heap)
   let assert Ok(#(a, heap)) = pop(heap)
   let assert Ok(#(y, heap)) = pop(heap)
   let assert Ok(#(x, heap)) = pop(heap)
   let err_from_empty = pop(heap)
 
-  // b |> should.equal("b")
+  b |> should.equal("b")
   a |> should.equal("a")
   y |> should.equal("y")
   x |> should.equal("x")

@@ -5,13 +5,15 @@ import gleam/result
 
 import internal/gb_tree.{type GbTree}
 
-pub type Container(c, v) {
+pub type SearchContainer(c, v) {
   Stack(List(v))
   Queue(Deque(v))
   LIFOHeap(GbTree(c, List(v)))
 }
 
-pub fn pop(sc: Container(c, v)) -> Result(#(v, Container(c, v)), Nil) {
+pub fn pop(
+  sc: SearchContainer(c, v),
+) -> Result(#(v, SearchContainer(c, v)), Nil) {
   case sc {
     Stack(list) -> {
       case list {
@@ -53,7 +55,11 @@ pub fn pop(sc: Container(c, v)) -> Result(#(v, Container(c, v)), Nil) {
   }
 }
 
-pub fn push(sc: Container(c, v), cost: c, value: v) -> Container(c, v) {
+pub fn push(
+  sc: SearchContainer(c, v),
+  cost: c,
+  value: v,
+) -> SearchContainer(c, v) {
   case sc {
     Stack(list) -> value |> list.prepend(list, _) |> Stack()
     Queue(queue) -> value |> deque.push_back(queue, _) |> Queue()
