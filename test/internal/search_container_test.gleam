@@ -10,42 +10,43 @@ pub fn main() {
 
 pub fn stack_push_test() {
   let stack = Stack([])
-  let assert Stack(list) = stack |> push(Nil, 1) |> push(Nil, 2) |> push(Nil, 3)
+  let assert Stack(list) =
+    stack |> push(#("a", 0)) |> push(#("b", 0)) |> push(#("c", 0))
 
-  list |> should.equal([3, 2, 1])
+  list |> should.equal(["c", "b", "a"])
 }
 
 pub fn stack_pop_test() {
-  let stack = Stack([3, 2, 1])
+  let stack = Stack(["a", "b", "c"])
   let assert Ok(#(a, stack)) = pop(stack)
   let assert Ok(#(b, stack)) = pop(stack)
   let assert Ok(#(c, stack)) = pop(stack)
   let err_from_empty = pop(stack)
 
-  a |> should.equal(3)
-  b |> should.equal(2)
-  c |> should.equal(1)
+  a.0 |> should.equal("a")
+  b.0 |> should.equal("b")
+  c.0 |> should.equal("c")
   err_from_empty |> should.be_error
 }
 
 pub fn queue_push_test() {
   let queue = Queue(deque.new())
   let assert Queue(queue) =
-    queue |> push(Nil, 1) |> push(Nil, 2) |> push(Nil, 3)
+    queue |> push(#("a", 0)) |> push(#("b", 0)) |> push(#("c", 0))
 
-  queue |> deque.to_list |> should.equal([1, 2, 3])
+  queue |> deque.to_list |> should.equal(["a", "b", "c"])
 }
 
 pub fn queue_pop_test() {
-  let queue = Queue(deque.from_list([1, 2, 3]))
+  let queue = Queue(deque.from_list(["a", "b", "c"]))
   let assert Ok(#(a, queue)) = pop(queue)
   let assert Ok(#(b, queue)) = pop(queue)
   let assert Ok(#(c, queue)) = pop(queue)
   let err_from_empty = pop(queue)
 
-  a |> should.equal(1)
-  b |> should.equal(2)
-  c |> should.equal(3)
+  a.0 |> should.equal("a")
+  b.0 |> should.equal("b")
+  c.0 |> should.equal("c")
   err_from_empty |> should.be_error
 }
 
@@ -53,10 +54,10 @@ pub fn lifo_heap_push_test() {
   let gb_tree = gb.new()
   let assert LIFOHeap(gb_tree) =
     LIFOHeap(gb_tree)
-    |> push(1, "a")
-    |> push(2, "x")
-    |> push(1, "b")
-    |> push(2, "y")
+    |> push(#("a", 1))
+    |> push(#("x", 2))
+    |> push(#("b", 1))
+    |> push(#("y", 2))
 
   let assert Ok(cost_1) = gb.get(gb_tree, 1)
   let assert Ok(cost_2) = gb.get(gb_tree, 2)
@@ -69,10 +70,10 @@ pub fn lifo_heap_pop_test() {
   let gb_tree = gb.new()
   let heap =
     LIFOHeap(gb_tree)
-    |> push(2, "x")
-    |> push(1, "a")
-    |> push(2, "y")
-    |> push(1, "b")
+    |> push(#("x", 2))
+    |> push(#("a", 1))
+    |> push(#("y", 2))
+    |> push(#("b", 1))
 
   let assert Ok(#(b, heap)) = pop(heap)
   let assert Ok(#(a, heap)) = pop(heap)
@@ -80,9 +81,9 @@ pub fn lifo_heap_pop_test() {
   let assert Ok(#(x, heap)) = pop(heap)
   let err_from_empty = pop(heap)
 
-  b |> should.equal("b")
-  a |> should.equal("a")
-  y |> should.equal("y")
-  x |> should.equal("x")
+  b |> should.equal(#("b", 1))
+  a |> should.equal(#("a", 1))
+  y |> should.equal(#("y", 2))
+  x |> should.equal(#("x", 2))
   err_from_empty |> should.be_error
 }
