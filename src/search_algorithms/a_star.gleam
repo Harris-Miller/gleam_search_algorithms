@@ -1,6 +1,5 @@
 import gleam/list
 import gleam/result
-import search_algorithms/internal/balanced_tree
 import search_algorithms/internal/container
 import search_algorithms/internal/generalized_search
 import search_algorithms/internal/utils
@@ -29,7 +28,7 @@ fn a_star_generalized(
 
   let result =
     generalized_search.generalized_search(
-      container.LIFOHeap(balanced_tree.new()),
+      container.new_lifo_heap(),
       fn(packed_state: #(Int, #(value, Int))) { packed_state.1.0 },
       utils.least_costly,
       get_next_states_packed,

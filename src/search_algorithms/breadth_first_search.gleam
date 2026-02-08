@@ -1,8 +1,7 @@
-import gleam/deque
 import gleam/function
 import gleam/list
 import gleam/result
-import search_algorithms/internal/container.{Queue}
+import search_algorithms/internal/container
 import search_algorithms/internal/generalized_search
 
 pub fn breadth_first_search(
@@ -11,7 +10,7 @@ pub fn breadth_first_search(
   initial: value,
 ) -> Result(List(value), Nil) {
   generalized_search.generalized_search(
-    Queue(deque.new()),
+    container.new_queue(),
     function.identity,
     fn(_, _) { False },
     fn(state: #(Int, value)) {

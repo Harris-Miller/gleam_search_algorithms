@@ -4,10 +4,22 @@ import gleam/option.{type Option}
 import gleam/result
 import search_algorithms/internal/balanced_tree.{type BalancedTree}
 
-pub type Container(value) {
+pub opaque type Container(value) {
   Stack(List(value))
   Queue(Deque(value))
   LIFOHeap(BalancedTree(Int, List(value)))
+}
+
+pub fn new_stack() {
+  Stack([])
+}
+
+pub fn new_queue() {
+  Queue(deque.new())
+}
+
+pub fn new_lifo_heap() {
+  LIFOHeap(balanced_tree.new())
 }
 
 pub fn pop(
@@ -57,9 +69,9 @@ pub fn pop(
 
 pub fn push(
   container: Container(value),
-  assoc: #(Int, value),
+  cost_value_pair: #(Int, value),
 ) -> Container(value) {
-  let #(cost, value) = assoc
+  let #(cost, value) = cost_value_pair
   case container {
     Stack(list) -> value |> list.prepend(list, _) |> Stack()
     Queue(queue) -> value |> deque.push_back(queue, _) |> Queue()

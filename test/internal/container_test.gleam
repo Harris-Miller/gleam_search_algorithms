@@ -1,27 +1,22 @@
-import gleam/deque
 import gleeunit
 import gleeunit/should
-import search_algorithms/internal/balanced_tree
-import search_algorithms/internal/container.{LIFOHeap, Queue, Stack, pop, push}
+import search_algorithms/internal/container
 
 pub fn main() {
   gleeunit.main()
 }
 
-pub fn stack_push_test() {
-  let stack = Stack([])
-  let assert Stack(list) =
-    stack |> push(#(0, "a")) |> push(#(0, "b")) |> push(#(0, "c"))
-
-  list |> should.equal(["c", "b", "a"])
-}
-
-pub fn stack_pop_test() {
-  let stack = Stack(["a", "b", "c"])
-  let assert Ok(#(a, stack)) = pop(stack)
-  let assert Ok(#(b, stack)) = pop(stack)
-  let assert Ok(#(c, stack)) = pop(stack)
-  let err_from_empty = pop(stack)
+/// Simple test to verify LIFO behavior
+pub fn stack_test() {
+  let stack =
+    container.new_stack()
+    |> container.push(#(0, "c"))
+    |> container.push(#(0, "b"))
+    |> container.push(#(0, "a"))
+  let assert Ok(#(a, stack)) = container.pop(stack)
+  let assert Ok(#(b, stack)) = container.pop(stack)
+  let assert Ok(#(c, stack)) = container.pop(stack)
+  let err_from_empty = container.pop(stack)
 
   a.1 |> should.equal("a")
   b.1 |> should.equal("b")
@@ -29,20 +24,18 @@ pub fn stack_pop_test() {
   err_from_empty |> should.be_error
 }
 
-pub fn queue_push_test() {
-  let queue = Queue(deque.new())
-  let assert Queue(queue) =
-    queue |> push(#(0, "a")) |> push(#(0, "b")) |> push(#(0, "c"))
+/// Simple test to verify FIFO behavior
+pub fn queue_test() {
+  let queue =
+    container.new_queue()
+    |> container.push(#(0, "a"))
+    |> container.push(#(0, "b"))
+    |> container.push(#(0, "c"))
 
-  queue |> deque.to_list |> should.equal(["a", "b", "c"])
-}
-
-pub fn queue_pop_test() {
-  let queue = Queue(deque.from_list(["a", "b", "c"]))
-  let assert Ok(#(a, queue)) = pop(queue)
-  let assert Ok(#(b, queue)) = pop(queue)
-  let assert Ok(#(c, queue)) = pop(queue)
-  let err_from_empty = pop(queue)
+  let assert Ok(#(a, queue)) = container.pop(queue)
+  let assert Ok(#(b, queue)) = container.pop(queue)
+  let assert Ok(#(c, queue)) = container.pop(queue)
+  let err_from_empty = container.pop(queue)
 
   a.1 |> should.equal("a")
   b.1 |> should.equal("b")
@@ -50,36 +43,20 @@ pub fn queue_pop_test() {
   err_from_empty |> should.be_error
 }
 
-pub fn lifo_heap_push_test() {
-  let balanced_tree = balanced_tree.new()
-  let assert LIFOHeap(balanced_tree) =
-    LIFOHeap(balanced_tree)
-    |> push(#(1, "a"))
-    |> push(#(2, "x"))
-    |> push(#(1, "b"))
-    |> push(#(2, "y"))
-
-  let assert Ok(cost_1) = balanced_tree.get(balanced_tree, 1)
-  let assert Ok(cost_2) = balanced_tree.get(balanced_tree, 2)
-
-  cost_1 |> should.equal(["b", "a"])
-  cost_2 |> should.equal(["y", "x"])
-}
-
-pub fn lifo_heap_pop_test() {
-  let balanced_tree = balanced_tree.new()
+/// Test to verify LIFO in min-prioritized order
+pub fn lifo_heap_test() {
   let heap =
-    LIFOHeap(balanced_tree)
-    |> push(#(2, "x"))
-    |> push(#(1, "a"))
-    |> push(#(2, "y"))
-    |> push(#(1, "b"))
+    container.new_lifo_heap()
+    |> container.push(#(2, "x"))
+    |> container.push(#(1, "a"))
+    |> container.push(#(1, "b"))
+    |> container.push(#(2, "y"))
 
-  let assert Ok(#(b, heap)) = pop(heap)
-  let assert Ok(#(a, heap)) = pop(heap)
-  let assert Ok(#(y, heap)) = pop(heap)
-  let assert Ok(#(x, heap)) = pop(heap)
-  let err_from_empty = pop(heap)
+  let assert Ok(#(b, heap)) = container.pop(heap)
+  let assert Ok(#(a, heap)) = container.pop(heap)
+  let assert Ok(#(y, heap)) = container.pop(heap)
+  let assert Ok(#(x, heap)) = container.pop(heap)
+  let err_from_empty = container.pop(heap)
 
   b |> should.equal(#(1, "b"))
   a |> should.equal(#(1, "a"))
