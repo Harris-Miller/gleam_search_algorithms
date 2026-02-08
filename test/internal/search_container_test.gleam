@@ -1,7 +1,7 @@
 import gleam/deque
 import gleeunit
 import gleeunit/should
-import internal/gb_tree as gb
+import internal/balanced_map
 import internal/search_container.{LIFOHeap, Queue, Stack, pop, push}
 
 pub fn main() {
@@ -51,25 +51,25 @@ pub fn queue_pop_test() {
 }
 
 pub fn lifo_heap_push_test() {
-  let gb_tree = gb.new()
-  let assert LIFOHeap(gb_tree) =
-    LIFOHeap(gb_tree)
+  let balanced_map = balanced_map.new()
+  let assert LIFOHeap(balanced_map) =
+    LIFOHeap(balanced_map)
     |> push(#("a", 1))
     |> push(#("x", 2))
     |> push(#("b", 1))
     |> push(#("y", 2))
 
-  let assert Ok(cost_1) = gb.get(gb_tree, 1)
-  let assert Ok(cost_2) = gb.get(gb_tree, 2)
+  let assert Ok(cost_1) = balanced_map.get(balanced_map, 1)
+  let assert Ok(cost_2) = balanced_map.get(balanced_map, 2)
 
   cost_1 |> should.equal(["b", "a"])
   cost_2 |> should.equal(["y", "x"])
 }
 
 pub fn lifo_heap_pop_test() {
-  let gb_tree = gb.new()
+  let balanced_map = balanced_map.new()
   let heap =
-    LIFOHeap(gb_tree)
+    LIFOHeap(balanced_map)
     |> push(#("x", 2))
     |> push(#("a", 1))
     |> push(#("y", 2))

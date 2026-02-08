@@ -1,6 +1,6 @@
 import gleeunit
 import gleeunit/should
-import internal/gb_tree as gb
+import internal/balanced_map
 
 pub fn main() {
   gleeunit.main()
@@ -8,16 +8,22 @@ pub fn main() {
 
 pub fn insert_test() {
   // insert should add keys if they don't exist
-  let gb_tree =
-    gb.new() |> gb.insert(3, "x") |> gb.insert(2, "y") |> gb.insert(1, "z")
+  let balanced_map =
+    balanced_map.new()
+    |> balanced_map.insert(3, "x")
+    |> balanced_map.insert(2, "y")
+    |> balanced_map.insert(1, "z")
 
-  let as_list = gb.to_list(gb_tree)
+  let as_list = balanced_map.to_list(balanced_map)
   as_list |> should.equal([#(1, "z"), #(2, "y"), #(3, "x")])
 
   // or update when they do
-  let gb_tree =
-    gb_tree |> gb.insert(3, "c") |> gb.insert(2, "b") |> gb.insert(1, "a")
+  let balanced_map =
+    balanced_map
+    |> balanced_map.insert(3, "c")
+    |> balanced_map.insert(2, "b")
+    |> balanced_map.insert(1, "a")
 
-  let as_list = gb.to_list(gb_tree)
+  let as_list = balanced_map.to_list(balanced_map)
   as_list |> should.equal([#(1, "a"), #(2, "b"), #(3, "c")])
 }
