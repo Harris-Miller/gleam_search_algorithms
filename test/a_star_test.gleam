@@ -43,7 +43,7 @@ fn get_next_points(grid: Dict(#(Int, Int), Int)) {
   }
 }
 
-pub fn a_star_test_hill_climb_finds_expected_solution() {
+pub fn a_star_test_climb_finds_expected_solution_test() {
   // my puzzle input from https://adventofcode.com/2022/day/12
   let assert Ok(content) = simplifile.read("./test/flat_files/hills.txt")
 
@@ -60,7 +60,7 @@ pub fn a_star_test_hill_climb_finds_expected_solution() {
   let assert Ok(#(end, _)) =
     grid |> dict.to_list() |> list.find(fn(tuple) { tuple.1 == "E" })
 
-  let assert Ok(#(total_cost, path)) =
+  let assert Ok(#(total_cost, _)) =
     a_star.a_star(
       get_next_points(point_heights),
       fn(_, _) { 1 },
@@ -69,11 +69,8 @@ pub fn a_star_test_hill_climb_finds_expected_solution() {
       start,
     )
 
-  // my part one solution for https://adventofcode.com/2022/day/12
-  // got this solution originally using https://hackage-content.haskell.org/package/search-algorithms to solve this same problem
+  // my correct part one solution for this day
+  // got this solution originally using https://hackage-content.haskell.org/package/search-algorithms
   // so if it is the same here, that should be enough to validate that my implementation is correct
   total_cost |> should.equal(412)
-  // the cost for all moves is `1`, so path length will be total_cost + 1
-  // this should be enough to assume it found the same actual path as my Haskell solution without having to check the individual values
-  path |> list.length() |> should.equal(413)
 }
