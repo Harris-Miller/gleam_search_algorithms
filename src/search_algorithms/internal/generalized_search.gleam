@@ -4,16 +4,20 @@ import gleam/result
 import gleam/set.{type Set}
 import search_algorithms/internal/container.{type Container}
 
-pub type SearchState(key, value) {
+/// The `Int` in `#(Int, state)` is the min-based priority
+/// `breadth_first_search` and `depth_first_search` don't use it, and always set that value to zero
+pub type SearchState(state_key, state) {
   SearchState(
-    current: #(Int, value),
-    container: Container(value),
-    visited: Set(key),
-    paths: Dict(key, List(#(Int, value))),
+    current: #(Int, state),
+    // Container takes state -> #(Int, state) internally
+    container: Container(state),
+    visited: Set(state_key),
+    paths: Dict(state_key, List(#(Int, state))),
   )
 }
 
-pub fn find_iterate(
+/// recursively search through next states until end us found, or there are no more states to check
+pub fn search_until_found(
   get_next_states: fn(value) -> Result(value, Nil),
   has_found_end: fn(value) -> Bool,
   value: value,
@@ -22,11 +26,11 @@ pub fn find_iterate(
     True -> Ok(value)
     False ->
       get_next_states(value)
-      |> result.try(find_iterate(get_next_states, has_found_end, _))
+      |> result.try(search_until_found(get_next_states, has_found_end, _))
   }
 }
 
-fn next_search_state(
+fn get_next_search_state(
   is_better: fn(List(#(Int, value)), List(#(Int, value))) -> Bool,
   make_key: fn(#(Int, value)) -> key,
   get_next_states: fn(#(Int, value)) -> List(#(Int, value)),
@@ -48,8 +52,8 @@ fn next_search_state(
         let updated_paths = dict.insert(paths, key, [state, ..steps_so_far])
 
         case dict.get(paths, key) {
-          Ok(old_path) ->
-            case is_better(old_path, [state, ..steps_so_far]) {
+          Ok(path) ->
+            case is_better(path, [state, ..steps_so_far]) {
               True -> #(updated_queue, updated_paths)
               False -> #(queue, paths)
             }
@@ -72,8 +76,8 @@ fn next_search_state(
 
   new_queue
   |> container.pop()
-  |> result.map(fn(state) {
-    let #(state, container) = state
+  |> result.map(fn(state_and_container) {
+    let #(state, container) = state_and_container
     SearchState(
       state,
       container,
@@ -81,22 +85,28 @@ fn next_search_state(
       new_paths,
     )
   })
-  |> result.try(fn(state) {
-    case set.contains(current.visited, make_key(state.current)) {
-      True -> next_search_state(is_better, make_key, get_next_states, state)
-      False -> Ok(state)
+  |> result.try(fn(search_state) {
+    case set.contains(current.visited, make_key(search_state.current)) {
+      True ->
+        get_next_search_state(
+          is_better,
+          make_key,
+          get_next_states,
+          search_state,
+        )
+      False -> Ok(search_state)
     }
   })
 }
 
 pub fn generalized_search(
-  container: Container(value),
-  make_key: fn(#(Int, value)) -> key,
-  is_better: fn(List(#(Int, value)), List(#(Int, value))) -> Bool,
-  get_next_states: fn(#(Int, value)) -> List(#(Int, value)),
-  has_found_end: fn(#(Int, value)) -> Bool,
-  initial_state: #(Int, value),
-) -> Result(List(#(Int, value)), Nil) {
+  container: Container(state),
+  make_key: fn(#(Int, state)) -> state_key,
+  is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
+  get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
+  has_found_end: fn(#(Int, state)) -> Bool,
+  initial_state: #(Int, state),
+) -> Result(List(#(Int, state)), Nil) {
   let initial_key = make_key(initial_state)
   let initial_state =
     SearchState(
@@ -107,14 +117,17 @@ pub fn generalized_search(
     )
 
   let end_result =
-    find_iterate(
-      next_search_state(is_better, make_key, get_next_states, _),
-      fn(state: SearchState(key, value)) { has_found_end(state.current) },
+    search_until_found(
+      get_next_search_state(is_better, make_key, get_next_states, _),
+      fn(search_state: SearchState(state_key, state)) {
+        has_found_end(search_state.current)
+      },
       initial_state,
     )
 
-  let get_steps = fn(state: SearchState(key, value)) {
-    let assert Ok(steps) = dict.get(state.paths, make_key(state.current))
+  let get_steps = fn(search_state: SearchState(state_key, state)) {
+    let assert Ok(steps) =
+      dict.get(search_state.paths, make_key(search_state.current))
     steps
   }
 
