@@ -1,8 +1,8 @@
-import balanced_map
 import gleam/deque
 import gleeunit
 import gleeunit/should
-import internal/container.{LIFOHeap, Queue, Stack, pop, push}
+import search_algorithms/balanced_map
+import search_algorithms/internal/container.{LIFOHeap, Queue, Stack, pop, push}
 
 pub fn main() {
   gleeunit.main()

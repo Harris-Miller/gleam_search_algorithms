@@ -1,6 +1,6 @@
-import balanced_map
 import gleeunit
 import gleeunit/should
+import search_algorithms/balanced_map
 
 pub fn main() {
   gleeunit.main()

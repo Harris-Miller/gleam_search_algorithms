@@ -2,10 +2,10 @@ import gleam/deque
 import gleam/function
 import gleam/list
 import gleam/result
-import internal/container.{Queue}
-import internal/generalized_search
+import search_algorithms/internal/container.{Queue}
+import search_algorithms/internal/generalized_search
 
-pub fn depth_first_search(
+pub fn breadth_first_search(
   next: fn(value) -> List(value),
   found: fn(value) -> Bool,
   initial: value,
@@ -13,7 +13,7 @@ pub fn depth_first_search(
   generalized_search.generalized_search(
     Queue(deque.new()),
     function.identity,
-    fn(_, _) { True },
+    fn(_, _) { False },
     fn(state: #(Int, value)) {
       next(state.1) |> list.map(fn(value) { #(0, value) })
     },

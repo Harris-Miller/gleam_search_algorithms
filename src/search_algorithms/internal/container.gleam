@@ -2,8 +2,7 @@ import gleam/deque.{type Deque}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-
-import balanced_map.{type BalancedMap}
+import search_algorithms/balanced_map.{type BalancedMap}
 
 pub type Container(value) {
   Stack(List(value))

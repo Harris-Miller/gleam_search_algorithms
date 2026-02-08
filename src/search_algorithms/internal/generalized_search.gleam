@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
-import internal/container.{type Container}
+import search_algorithms/internal/container.{type Container}
 
 pub type SearchState(key, value) {
   SearchState(

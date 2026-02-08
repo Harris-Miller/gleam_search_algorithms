@@ -1,10 +1,10 @@
-import a_star
 import gleam/dict.{type Dict}
 import gleam/int
 import gleam/list
 import gleam/string
 import gleeunit
 import gleeunit/should
+import search_algorithms/a_star
 import simplifile
 import test_utils
 

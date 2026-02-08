@@ -1,9 +1,9 @@
-import balanced_map
 import gleam/list
 import gleam/result
-import internal/container
-import internal/generalized_search
-import internal/utils
+import search_algorithms/balanced_map
+import search_algorithms/internal/container
+import search_algorithms/internal/generalized_search
+import search_algorithms/internal/utils
 
 fn a_star_generalized(
   get_next_states_packed: fn(#(Int, #(value, Int))) ->

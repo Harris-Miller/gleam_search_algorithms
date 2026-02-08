@@ -1,9 +1,9 @@
-import dijkstra
 import gleam/dict
 import gleam/list
 import gleam/set
 import gleeunit
 import gleeunit/should
+import search_algorithms/dijkstra
 import simplifile
 import test_utils
 
