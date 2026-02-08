@@ -5,25 +5,27 @@ import gleam/result
 
 import balanced_map.{type BalancedMap}
 
-pub type Container(v) {
-  Stack(List(v))
-  Queue(Deque(v))
-  LIFOHeap(BalancedMap(Int, List(v)))
+pub type Container(value) {
+  Stack(List(value))
+  Queue(Deque(value))
+  LIFOHeap(BalancedMap(Int, List(value)))
 }
 
-pub fn pop(sc: Container(v)) -> Result(#(#(v, Int), Container(v)), Nil) {
+pub fn pop(
+  sc: Container(value),
+) -> Result(#(#(Int, value), Container(value)), Nil) {
   case sc {
     Stack(list) -> {
       case list {
-        [head, ..tail] -> Ok(#(#(head, 0), Stack(tail)))
+        [head, ..tail] -> Ok(#(#(0, head), Stack(tail)))
         [] -> Error(Nil)
       }
     }
-    Queue(queue) -> {
-      deque.pop_front(queue)
+    Queue(deque) -> {
+      deque.pop_front(deque)
       |> result.map(fn(tuple) {
-        let #(value, queue) = tuple
-        #(#(value, 0), Queue(queue))
+        let #(value, deque) = tuple
+        #(#(0, value), Queue(deque))
       })
     }
     LIFOHeap(tree) -> {
@@ -33,12 +35,12 @@ pub fn pop(sc: Container(v)) -> Result(#(#(v, Int), Container(v)), Nil) {
           case value {
             #(cost, [head]) -> {
               let next_heap = tree |> balanced_map.delete(cost) |> LIFOHeap()
-              Ok(#(#(head, cost), next_heap))
+              Ok(#(#(cost, head), next_heap))
             }
             #(cost, [head, ..tail]) -> {
               let next_heap =
                 tree |> balanced_map.insert(cost, tail) |> LIFOHeap()
-              Ok(#(#(head, cost), next_heap))
+              Ok(#(#(cost, head), next_heap))
             }
             #(cost, []) -> {
               // logically, this should be unreachable
@@ -54,13 +56,16 @@ pub fn pop(sc: Container(v)) -> Result(#(#(v, Int), Container(v)), Nil) {
   }
 }
 
-pub fn push(sc: Container(v), assoc: #(v, Int)) -> Container(v) {
-  let #(value, cost) = assoc
-  case sc {
+pub fn push(
+  container: Container(value),
+  assoc: #(Int, value),
+) -> Container(value) {
+  let #(cost, value) = assoc
+  case container {
     Stack(list) -> value |> list.prepend(list, _) |> Stack()
     Queue(queue) -> value |> deque.push_back(queue, _) |> Queue()
     LIFOHeap(tree) -> {
-      let handler = fn(opt: Option(List(v))) {
+      let handler = fn(opt: Option(List(value))) {
         case opt {
           option.Some(list) -> [value, ..list]
           option.None -> [value]

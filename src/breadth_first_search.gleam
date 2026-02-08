@@ -5,18 +5,20 @@ import gleam/result
 import internal/container.{Queue}
 import internal/generalized_search
 
-pub fn bfs(
-  next: fn(a) -> List(a),
-  found: fn(a) -> Bool,
-  initial: a,
-) -> Result(List(a), Nil) {
+pub fn breadth_first_search(
+  next: fn(value) -> List(value),
+  found: fn(value) -> Bool,
+  initial: value,
+) -> Result(List(value), Nil) {
   generalized_search.generalized_search(
     Queue(deque.new()),
     function.identity,
     fn(_, _) { False },
-    fn(state: #(a, Int)) { next(state.0) |> list.map(fn(a) { #(a, 0) }) },
-    fn(state: #(a, Int)) { found(state.0) },
-    #(initial, 0),
+    fn(state: #(Int, value)) {
+      next(state.1) |> list.map(fn(value) { #(0, value) })
+    },
+    fn(state: #(Int, value)) { found(state.1) },
+    #(0, initial),
   )
-  |> result.map(fn(list) { list.map(list, fn(t) { t.0 }) })
+  |> result.map(fn(list) { list.map(list, fn(t) { t.1 }) })
 }
