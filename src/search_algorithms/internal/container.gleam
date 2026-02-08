@@ -2,12 +2,12 @@ import gleam/deque.{type Deque}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import search_algorithms/balanced_map.{type BalancedMap}
+import search_algorithms/internal/balanced_tree.{type BalancedTree}
 
 pub type Container(value) {
   Stack(List(value))
   Queue(Deque(value))
-  LIFOHeap(BalancedMap(Int, List(value)))
+  LIFOHeap(BalancedTree(Int, List(value)))
 }
 
 pub fn pop(
@@ -28,23 +28,23 @@ pub fn pop(
       })
     }
     LIFOHeap(tree) -> {
-      case balanced_map.get_min(tree) {
+      case balanced_tree.get_min(tree) {
         Error(Nil) -> Error(Nil)
         Ok(value) -> {
           case value {
             #(cost, [head]) -> {
-              let next_heap = tree |> balanced_map.delete(cost) |> LIFOHeap()
+              let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
               Ok(#(#(cost, head), next_heap))
             }
             #(cost, [head, ..tail]) -> {
               let next_heap =
-                tree |> balanced_map.insert(cost, tail) |> LIFOHeap()
+                tree |> balanced_tree.insert(cost, tail) |> LIFOHeap()
               Ok(#(#(cost, head), next_heap))
             }
             #(cost, []) -> {
               // logically, this should be unreachable
               // just in case, delete this min
-              let next_heap = tree |> balanced_map.delete(cost) |> LIFOHeap()
+              let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
               // and call pop again to get value at new min
               pop(next_heap)
             }
@@ -70,7 +70,7 @@ pub fn push(
           option.None -> [value]
         }
       }
-      balanced_map.upsert(tree, cost, handler) |> LIFOHeap()
+      balanced_tree.upsert(tree, cost, handler) |> LIFOHeap()
     }
   }
 }
