@@ -2,12 +2,12 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
-import internal/search_container.{type SearchContainer}
+import internal/container.{type Container}
 
 pub type SearchState(state_key, value) {
   SearchState(
     current: #(value, Int),
-    queue: SearchContainer(value),
+    queue: Container(value),
     visited: Set(state_key),
     paths: Dict(state_key, List(#(value, Int))),
   )
@@ -32,10 +32,7 @@ fn next_search_state(
   old: SearchState(state_key, value),
 ) -> Result(SearchState(state_key, value), Nil) {
   let update_queue_paths = fn(
-    queue_and_paths: #(
-      SearchContainer(value),
-      Dict(state_key, List(#(value, Int))),
-    ),
+    queue_and_paths: #(Container(value), Dict(state_key, List(#(value, Int)))),
     state: #(value, Int),
   ) {
     let #(queue, paths) = queue_and_paths
@@ -45,7 +42,7 @@ fn next_search_state(
       True -> #(queue, paths)
       False -> {
         let assert Ok(steps_so_far) = dict.get(old.paths, make_key(old.current))
-        let updated_queue = search_container.push(queue, state)
+        let updated_queue = container.push(queue, state)
         let updated_paths = dict.insert(paths, key, [state, ..steps_so_far])
 
         case dict.get(paths, key) {
@@ -68,7 +65,7 @@ fn next_search_state(
   let #(new_queue, new_paths) = new_queue_paths()
 
   new_queue
-  |> search_container.pop()
+  |> container.pop()
   |> result.map(fn(state) {
     let #(state, container) = state
     SearchState(
@@ -87,7 +84,7 @@ fn next_search_state(
 }
 
 pub fn generalized_search(
-  container: SearchContainer(value),
+  container: Container(value),
   make_key: fn(#(value, Int)) -> state_key,
   better: fn(List(#(value, Int)), List(#(value, Int))) -> Bool,
   next: fn(#(value, Int)) -> List(#(value, Int)),

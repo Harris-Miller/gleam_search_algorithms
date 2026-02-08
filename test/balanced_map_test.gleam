@@ -1,6 +1,6 @@
+import balanced_map
 import gleeunit
 import gleeunit/should
-import internal/balanced_map
 
 pub fn main() {
   gleeunit.main()

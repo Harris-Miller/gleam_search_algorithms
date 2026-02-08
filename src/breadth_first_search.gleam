@@ -1,9 +1,9 @@
-import generalized_search
 import gleam/deque
 import gleam/function
 import gleam/list
 import gleam/result
-import internal/search_container.{Queue}
+import internal/container.{Queue}
+import internal/generalized_search
 
 pub fn bfs(
   next: fn(a) -> List(a),

@@ -3,17 +3,15 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 
-import internal/balanced_map.{type BalancedMap}
+import balanced_map.{type BalancedMap}
 
-pub type SearchContainer(v) {
+pub type Container(v) {
   Stack(List(v))
   Queue(Deque(v))
   LIFOHeap(BalancedMap(Int, List(v)))
 }
 
-pub fn pop(
-  sc: SearchContainer(v),
-) -> Result(#(#(v, Int), SearchContainer(v)), Nil) {
+pub fn pop(sc: Container(v)) -> Result(#(#(v, Int), Container(v)), Nil) {
   case sc {
     Stack(list) -> {
       case list {
@@ -56,7 +54,7 @@ pub fn pop(
   }
 }
 
-pub fn push(sc: SearchContainer(v), assoc: #(v, Int)) -> SearchContainer(v) {
+pub fn push(sc: Container(v), assoc: #(v, Int)) -> Container(v) {
   let #(value, cost) = assoc
   case sc {
     Stack(list) -> value |> list.prepend(list, _) |> Stack()
