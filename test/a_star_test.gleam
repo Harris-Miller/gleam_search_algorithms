@@ -6,22 +6,10 @@ import gleam/string
 import gleeunit
 import gleeunit/should
 import simplifile
+import test_utils
 
 pub fn main() {
   gleeunit.main()
-}
-
-fn make_grid(content: String) {
-  content
-  |> string.trim_end()
-  |> string.split("\n")
-  |> list.index_map(fn(line, row) {
-    line
-    |> string.split("")
-    |> list.index_map(fn(value, col) { #(#(row, col), value) })
-  })
-  |> list.flatten()
-  |> dict.from_list()
 }
 
 fn create_height_map() {
@@ -49,12 +37,7 @@ fn can_move_to(grid: Dict(#(Int, Int), Int)) {
 
 fn get_next_points(grid: Dict(#(Int, Int), Int)) {
   fn(p: #(Int, Int)) {
-    [
-      #(p.0 - 1, p.1),
-      #(p.0, p.1 + 1),
-      #(p.0 + 1, p.1),
-      #(p.0, p.1 - 1),
-    ]
+    test_utils.get_neighbors(p)
     |> list.filter(dict.has_key(grid, _))
     |> list.filter(can_move_to(grid)(p, _))
   }
@@ -64,7 +47,7 @@ pub fn a_star_test_hill_climb_finds_expected_solution() {
   // my puzzle input from https://adventofcode.com/2022/day/12
   let assert Ok(content) = simplifile.read("./test/flat_files/hills.txt")
 
-  let grid = make_grid(content)
+  let grid = test_utils.make_grid(content)
   let height_map = create_height_map()
   let point_heights =
     dict.map_values(grid, fn(_, val) {
