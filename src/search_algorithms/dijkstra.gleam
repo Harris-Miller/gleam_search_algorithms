@@ -1,7 +1,7 @@
 import gleam/list
 import gleam/result
-import search_algorithms/internal/container
 import search_algorithms/internal/generalized_search
+import search_algorithms/internal/search_container
 import search_algorithms/internal/utils
 
 fn dijkstra_generalized(
@@ -23,7 +23,7 @@ fn dijkstra_generalized(
 
   let result =
     generalized_search.generalized_search(
-      container.new_lifo_heap(),
+      search_container.new_lifo_heap(),
       fn(t: #(Int, value)) { t.1 },
       utils.least_costly,
       get_next_states_packed,

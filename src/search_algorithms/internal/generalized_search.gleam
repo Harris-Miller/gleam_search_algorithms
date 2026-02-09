@@ -2,15 +2,29 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
-import search_algorithms/internal/container.{type Container}
+import search_algorithms/internal/search_container.{type SearchContainer}
 
-/// The `Int` in `#(Int, state)` is the min-based priority
-/// `breadth_first_search` and `depth_first_search` don't use it, and always set that value to zero
+/// A Record that represents the current State of the search.
+/// 
+/// Generics:
+/// * `state_key` is used for `==` equality for the values and keys in visited and paths respectively
+/// * `state` can be anything
+/// 
+/// Properties:
+/// * `current` - the `state` tied to the "cost" it took to get there
+/// * `container` - The abstract data structure set by the type of search, used to `push` state, and `pop` back in a specific order
+///   * Implementations include a `Stack`, `Queue`, and `LIFOHeap`
+/// * `visited` - a `Set` of visited locations, key'd by `state_key`
+/// * `paths` - a collection of how we got to `state_key` by a list of `#(Int, state)`
+/// 
+/// Notes:
+/// The `Int` in `#(Int, state)` is the min-based priority needed for the LIFOHeap container.
+/// It is unused by `Stack` and `Queue`, and will always be `0` for them
 pub type SearchState(state_key, state) {
   SearchState(
     current: #(Int, state),
     // Container takes state -> #(Int, state) internally
-    container: Container(state),
+    container: SearchContainer(state),
     visited: Set(state_key),
     paths: Dict(state_key, List(#(Int, state))),
   )
@@ -37,7 +51,7 @@ fn get_next_search_state(
   current: SearchState(key, value),
 ) -> Result(SearchState(key, value), Nil) {
   let update_queue_paths = fn(
-    queue_and_paths: #(Container(value), Dict(key, List(#(Int, value)))),
+    queue_and_paths: #(SearchContainer(value), Dict(key, List(#(Int, value)))),
     state: #(Int, value),
   ) {
     let #(queue, paths) = queue_and_paths
@@ -48,7 +62,7 @@ fn get_next_search_state(
       False -> {
         let assert Ok(steps_so_far) =
           dict.get(current.paths, make_key(current.current))
-        let updated_queue = container.push(queue, state)
+        let updated_queue = search_container.push(queue, state)
         let updated_paths = dict.insert(paths, key, [state, ..steps_so_far])
 
         case dict.get(paths, key) {
@@ -75,7 +89,7 @@ fn get_next_search_state(
   let #(new_queue, new_paths) = new_queue_paths()
 
   new_queue
-  |> container.pop()
+  |> search_container.pop()
   |> result.map(fn(state_and_container) {
     let #(state, container) = state_and_container
     SearchState(
@@ -99,8 +113,10 @@ fn get_next_search_state(
   })
 }
 
+/// a clever search that, based on the container type and the is_better function,
+/// can be used to do A*, Dijkstra, BFS, or DFS
 pub fn generalized_search(
-  container: Container(state),
+  container: SearchContainer(state),
   make_key: fn(#(Int, state)) -> state_key,
   is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
   get_next_states: fn(#(Int, state)) -> List(#(Int, state)),

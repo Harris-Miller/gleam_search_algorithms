@@ -1,8 +1,8 @@
 import gleam/function
 import gleam/list
 import gleam/result
-import search_algorithms/internal/container
 import search_algorithms/internal/generalized_search
+import search_algorithms/internal/search_container
 
 pub fn depth_first_search(
   next: fn(value) -> List(value),
@@ -10,7 +10,7 @@ pub fn depth_first_search(
   initial: value,
 ) -> Result(List(value), Nil) {
   generalized_search.generalized_search(
-    container.new_stack(),
+    search_container.new_stack(),
     function.identity,
     fn(_, _) { True },
     fn(state: #(Int, value)) {
