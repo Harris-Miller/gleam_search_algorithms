@@ -7,8 +7,16 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/option
 import gleam/set
+import gleam/yielder.{type Yielder}
 
 pub type BalancedTree(k, v)
+
+pub type Iter(k, v)
+
+type Order {
+  Ordered
+  Reversed
+}
 
 // Section
 // non-public, @external's to gb_trees
@@ -32,8 +40,8 @@ pub fn gb_trees_from_orddict(list: List(#(k, v))) -> BalancedTree(k, v)
 @external(erlang, "gb_trees", "is_defined")
 fn gb_trees_is_defined(key: k, gb_tree: BalancedTree(k, v)) -> Bool
 
-// @external(erlang, "simplifile_erl", "lookup_shim")
-// fn gb_trees_lookup(key: k, gb_tree: BalancedTree(k, v)) -> Option(v)
+@external(erlang, "gb_trees", "iterator")
+fn gb_trees_iterator(tree: BalancedTree(k, v), order: Order) -> Iter(k, v)
 
 @external(erlang, "gb_trees", "map")
 fn gb_trees_map(
@@ -51,6 +59,9 @@ fn gb_trees_take_smallest(
 
 @external(erlang, "gb_trees", "largest")
 fn gb_trees_largest(from tree: BalancedTree(k, v)) -> #(k, v)
+
+@external(erlang, "gb_trees_shim", "next_shim")
+fn next_shim(iter: Iter(k, v)) -> Result(#(k, v, Iter(kv, v)), Nil)
 
 @external(erlang, "gb_trees", "take_largest")
 fn gb_trees_take_largest(
@@ -185,6 +196,24 @@ pub fn insert(
 
 @external(erlang, "gb_trees", "is_empty")
 pub fn is_empty(tree: BalancedTree(k, v)) -> Bool
+
+fn iterate_internal(tree: BalancedTree(k, v), order: Order) -> Yielder(#(k, v)) {
+  let iter = gb_trees_iterator(tree, order)
+  yielder.unfold(iter, fn(acc) {
+    case next_shim(acc) {
+      Error(Nil) -> yielder.Done
+      Ok(#(key, value, next_acc)) -> yielder.Next(#(key, value), next_acc)
+    }
+  })
+}
+
+pub fn iterate(tree: BalancedTree(k, v)) -> Yielder(#(k, v)) {
+  iterate_internal(tree, Ordered)
+}
+
+pub fn iterate_right(tree: BalancedTree(k, v)) -> Yielder(#(k, v)) {
+  iterate_internal(tree, Reversed)
+}
 
 @external(erlang, "gb_trees", "keys")
 pub fn keys(tree: BalancedTree(k, v)) -> List(k)
