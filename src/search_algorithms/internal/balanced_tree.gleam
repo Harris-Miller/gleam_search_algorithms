@@ -83,14 +83,11 @@ pub fn combine(
 ) -> BalancedTree(k, v) {
   other
   |> to_list()
-  |> list.each(fn(kvp) {
-    upsert(tree, kvp.0, fn(opt_value) {
+  |> list.fold(tree, fn(acc, kvp) {
+    upsert(acc, kvp.0, fn(opt_value) {
       case opt_value {
-        option.None -> kvp
-        option.Some(kvp2) -> {
-          let new_v = fun(kvp2.1, kvp.1)
-          #(kvp.0, new_v)
-        }
+        option.None -> kvp.1
+        option.Some(v) -> fun(v, kvp.1)
       }
     })
   })
