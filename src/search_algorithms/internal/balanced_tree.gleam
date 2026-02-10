@@ -10,20 +10,6 @@ import gleam/set
 
 pub type BalancedTree(k, v)
 
-/// ErlangOption
-/// Same as `Option`, but instead of `Some`, it's `Value`
-/// 
-/// the sole purpose of this type is to translate the return of gb_tress.lookup/2 to a Gleam type 
-/// that return type is `none | {value, a}`, where `none` and `value` are Atoms
-/// this works because Gleam way-ways translates Generic Type constructors to atoms, or tuples of atom + variables
-/// eg:
-/// * None -> `none`
-/// * Value(a) -> `(value, a)`
-type ErlangOption(a) {
-  Value(a)
-  None
-}
-
 // Section
 // non-public, @external's to gb_trees
 
@@ -46,8 +32,8 @@ pub fn gb_trees_from_orddict(list: List(#(k, v))) -> BalancedTree(k, v)
 @external(erlang, "gb_trees", "is_defined")
 fn gb_trees_is_defined(key: k, gb_tree: BalancedTree(k, v)) -> Bool
 
-@external(erlang, "gb_trees", "lookup")
-fn gb_trees_lookup(key: k, gb_tree: BalancedTree(k, v)) -> ErlangOption(v)
+// @external(erlang, "simplifile_erl", "lookup_shim")
+// fn gb_trees_lookup(key: k, gb_tree: BalancedTree(k, v)) -> Option(v)
 
 @external(erlang, "gb_trees", "map")
 fn gb_trees_map(
@@ -156,12 +142,14 @@ pub fn from_list(list: List(#(k, v))) -> BalancedTree(k, v) {
   list |> dict.from_list() |> from_dict()
 }
 
-pub fn get(from gb_tree: BalancedTree(k, v), get key: k) -> Result(v, Nil) {
-  case gb_trees_lookup(key, gb_tree) {
-    Value(v) -> Ok(v)
-    None -> Error(Nil)
-  }
-}
+@external(erlang, "gb_trees_shim", "lookup_shim")
+pub fn get(from gb_tree: BalancedTree(k, v), get key: k) -> Result(v, Nil)
+
+/// Gets the 2-element tuple `#(key, value)` of the next larger key in the Tree.
+/// 
+/// The tree may not have a larger key, so the tuple is wrapped in a `Result`.
+@external(erlang, "gb_trees_shim", "larger_shim")
+pub fn get_larger(tree: BalancedTree(k, v), key: k) -> Result(#(k, v), Nil)
 
 pub fn get_max(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
   case is_empty(tree) {
@@ -176,6 +164,12 @@ pub fn get_min(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
     False -> tree |> gb_trees_smallest() |> Ok()
   }
 }
+
+/// Gets the 2-element tuple `#(key, value)` of the next smaller key in the Tree.
+/// 
+/// The tree may not have a smaller key, so the tuple is wrapped in a `Result`.
+@external(erlang, "gb_trees_shim", "smaller_shim")
+pub fn get_smaller(tree: BalancedTree(k, v), key: k) -> Result(#(k, v), Nil)
 
 pub fn has_key(tree: BalancedTree(k, v), key: k) -> Bool {
   gb_trees_is_defined(key, tree)
