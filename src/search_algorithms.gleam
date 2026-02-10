@@ -73,6 +73,7 @@ fn dijkstra_generalized(
   result.map(result, unpack)
 }
 
+/// Dijsktra
 pub fn dijkstra_assoc(
   get_next_states: fn(value) -> List(#(value, Int)),
   has_found_end: fn(value) -> Bool,
@@ -90,6 +91,7 @@ pub fn dijkstra_assoc(
   dijkstra_generalized(get_next_states_packed, has_found_end, initial)
 }
 
+/// Dijsktra
 pub fn dijkstra(
   get_next_states: fn(value) -> List(value),
   get_next_cost: fn(value, value) -> Int,
@@ -109,6 +111,7 @@ pub fn dijkstra(
   dijkstra_generalized(get_next_states_packed, has_found_end, initial)
 }
 
+/// A*
 fn a_star_generalized(
   get_next_states_packed: fn(#(Int, #(value, Int))) ->
     List(#(Int, #(value, Int))),
@@ -146,6 +149,7 @@ fn a_star_generalized(
   result.map(result, unpack)
 }
 
+/// A*
 pub fn a_star_assoc(
   get_next_states: fn(value) -> List(#(value, Int)),
   approx_remaining_cost: fn(value) -> Int,
