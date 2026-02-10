@@ -9,17 +9,32 @@ import gleam/option
 import gleam/set
 import gleam/yielder.{type Yielder}
 
+/// A Balanced Tree of keys and values.
+///
+/// Any type can be used for the keys and values of a tree, but all the keys
+/// must be of the same type and all the values must be of the same type.
+///
+/// Each key can only be present in a tree once.
+///
+/// BalancedTrees _are_ ordered, unlike `gleam/dict`, and are a good solution for when your code
+/// relies on the ordering of of the entries, such as a Heap or PriorityQueue.
+///
+/// See [the Erlang map module](https://erlang.org/doc/man/maps.html) for more
+/// information.
+///
 pub type BalancedTree(k, v)
 
-pub type Iter(k, v)
+/// gb_trees.iter/2
+type Iter(k, v)
 
+/// For `gb_trees.iterate/2`
 type Order {
   Ordered
   Reversed
 }
 
-// Section
-// non-public, @external's to gb_trees
+// Section: non-public
+// @external's to gb_trees
 
 @external(erlang, "gb_trees", "delete_any")
 fn gb_trees_delete_any(
@@ -68,14 +83,16 @@ fn gb_trees_take_largest(
   from tree: BalancedTree(k, v),
 ) -> #(k, v, BalancedTree(k, v))
 
-// Section
-// Public Functions
+// Section: Public Functions
 // Gleam friendly, includes @external's if function signature is already Gleam friendly
 
 /// Notice that this is rarely necessary, but can be motivated when many nodes have been deleted from the tree without further insertions. Rebalancing can then be forced to minimize lookup times, as deletion does not rebalance the tree.
 @external(erlang, "gb_trees", "balance")
 pub fn balance(tree: BalancedTree(k, v)) -> BalancedTree(k, v)
 
+/// Creates a new tree from a pair of given frees by combining their entries.
+///
+/// If there are entries with the same keys in both trees the given function is used to determine the new value to use in the resulting dict.
 pub fn combine(
   tree: BalancedTree(k, v),
   other: BalancedTree(k, v),
@@ -94,6 +111,7 @@ pub fn combine(
   })
 }
 
+/// Creates a new tree from a given tree with all the same entries except for the one with a given key, if it exists.
 pub fn delete(
   from tree: BalancedTree(k, v),
   delete key: k,
@@ -101,6 +119,7 @@ pub fn delete(
   gb_trees_delete_any(key, tree)
 }
 
+// Creates a new tree from a given tree with all the same entries except any with keys found in a given list.
 pub fn drop(
   from tree: BalancedTree(k, v),
   drop disallowed_keys: List(k),
@@ -109,10 +128,14 @@ pub fn drop(
   filter(tree, fn(k, _) { set.contains(as_set, k) })
 }
 
+/// Calls a function for each key and value in a tree, discarding the return value.
+///
+/// Useful for producing a side effect for every item of a tree.
 pub fn each(tree: BalancedTree(k, v), fun: fn(k, v) -> a) -> Nil {
   to_list(tree) |> list.each(fn(kvp) { fun(kvp.0, kvp.1) })
 }
 
+// Creates a new tree from a given tree, minus any entries that a given function returns False for.
 pub fn filter(
   in tree: BalancedTree(k, v),
   keeping predicate: fn(k, v) -> Bool,
@@ -123,7 +146,9 @@ pub fn filter(
   |> balance()
 }
 
-/// fold in-order from min-to-max
+/// Reduces a list of elements into a single value by calling a given function on each element, in order from min-key to max-key
+///
+/// This function runs in linear time.
 pub fn fold(
   over tree: BalancedTree(k, v),
   from initial: acc,
@@ -132,7 +157,9 @@ pub fn fold(
   to_list(tree) |> list.fold(initial, fn(acc, kvp) { fun(acc, kvp.0, kvp.1) })
 }
 
-/// fold in-order from max-to-min
+/// Reduces a list of elements into a single value by calling a given function on each element, in order from max-key to min-key
+///
+/// This function runs in linear time.
 pub fn fold_right(
   over tree: BalancedTree(k, v),
   from initial: acc,
@@ -143,16 +170,23 @@ pub fn fold_right(
   |> list.fold(initial, fn(acc, kvp) { fun(acc, kvp.0, kvp.1) })
 }
 
+/// Converts a `Dict(k, v)` into a `BalancedTree(k, v)`
 pub fn from_dict(dict: Dict(k, v)) -> BalancedTree(k, v) {
   dict |> dict.to_list() |> gb_trees_from_orddict()
 }
 
+/// Converts a list of 2-element tuples `#(key, value)` to a tree.
+///
+/// If two tuples have the same key the last one in the list will be the one that is present in the tree.
 pub fn from_list(list: List(#(k, v))) -> BalancedTree(k, v) {
   // gb_trees_from_orddict panics if there are duplicate keys
   // so to both remove duplicates, and mirror dict.from_list()'s behavior of "last one in the list", do dict.from_list() first
   list |> dict.from_list() |> from_dict()
 }
 
+/// Fetches a value from a tree for a given key.
+///
+/// The tree may not have a value for the key, so the value is wrapped in a Result.
 @external(erlang, "gb_trees_shim", "lookup_shim")
 pub fn get(from gb_tree: BalancedTree(k, v), get key: k) -> Result(v, Nil)
 
@@ -162,6 +196,9 @@ pub fn get(from gb_tree: BalancedTree(k, v), get key: k) -> Result(v, Nil)
 @external(erlang, "gb_trees_shim", "larger_shim")
 pub fn get_larger(tree: BalancedTree(k, v), key: k) -> Result(#(k, v), Nil)
 
+/// Fetches the key-value pair for the largest key in the tree.
+///
+/// Returns `Error(Nil)` when the tree is empty, otherwise `Ok(#(k, v))`
 pub fn get_max(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
   case is_empty(tree) {
     True -> Error(Nil)
@@ -169,6 +206,9 @@ pub fn get_max(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
   }
 }
 
+/// Fetches the key-value pair for the smallest key in the tree.
+///
+/// Returns `Error(Nil)` when the tree is empty, otherwise `Ok(#(k, v))`
 pub fn get_min(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
   case is_empty(tree) {
     True -> Error(Nil)
@@ -182,6 +222,7 @@ pub fn get_min(from tree: BalancedTree(k, v)) -> Result(#(k, v), Nil) {
 @external(erlang, "gb_trees_shim", "smaller_shim")
 pub fn get_smaller(tree: BalancedTree(k, v), key: k) -> Result(#(k, v), Nil)
 
+/// Determines whether or not a value is present in the tree for a given key.
 pub fn has_key(tree: BalancedTree(k, v), key: k) -> Bool {
   gb_trees_is_defined(key, tree)
 }
@@ -194,6 +235,7 @@ pub fn insert(
   gb_trees_enter(key, value, tree)
 }
 
+/// Determines whether or not the tree is empty.
 @external(erlang, "gb_trees", "is_empty")
 pub fn is_empty(tree: BalancedTree(k, v)) -> Bool
 
@@ -215,9 +257,13 @@ pub fn iterate_right(tree: BalancedTree(k, v)) -> Yielder(#(k, v)) {
   iterate_internal(tree, Reversed)
 }
 
+/// Gets a list of all keys in a given dict.
+///
+/// BalancedTrees are ordered. Keys are returned ordered min-to-max.
 @external(erlang, "gb_trees", "keys")
 pub fn keys(tree: BalancedTree(k, v)) -> List(k)
 
+/// Updates all values in a given tree by calling a given function on each key and value.
 pub fn map_values(
   in tree: BalancedTree(k, v),
   with fun: fn(k, v) -> a,
@@ -225,6 +271,9 @@ pub fn map_values(
   gb_trees_map(fun, tree)
 }
 
+/// Creates a new tree from a pair of given trees by combining their entries.
+///
+/// If there are entries with the same keys in both trees the entry from the second tree takes precedence.
 pub fn merge(
   into tree: BalancedTree(k, v),
   from new_entries: BalancedTree(k, v),
@@ -236,9 +285,11 @@ pub fn merge(
   from_dict(merged)
 }
 
+/// Creates a fresh tree that contains no values.
 @external(erlang, "gb_trees", "empty")
 pub fn new() -> BalancedTree(k, v)
 
+/// Gets the max key-value pair in the tree, returning the pair and a new tree without that pair.
 pub fn pop_max(
   from tree: BalancedTree(k, v),
 ) -> Result(#(#(k, v), BalancedTree(k, v)), Nil) {
@@ -249,6 +300,7 @@ pub fn pop_max(
   }
 }
 
+/// Gets the min key-value pair in the tree, returning the pair and a new tree without that pair.
 pub fn pop_min(
   from tree: BalancedTree(k, v),
 ) -> Result(#(#(k, v), BalancedTree(k, v)), Nil) {
@@ -259,9 +311,15 @@ pub fn pop_min(
   }
 }
 
+/// Determines the number of key-value pairs in the dict.
+/// 
+/// Unlike gleam/dict, this function must iterate over the tree and runs in linear time time
 @external(erlang, "gb_trees", "size")
 pub fn size(tree: BalancedTree(k, v)) -> Int
 
+/// Converts the dict to a list of 2-element tuples #(key, value), one for each key-value pair in the dict.
+///
+/// The tuples in the list are ordered by Key
 @external(erlang, "gb_trees", "to_list")
 pub fn to_list(tree: BalancedTree(k, v)) -> List(#(k, v))
 
@@ -269,6 +327,9 @@ pub fn to_dict(tree: BalancedTree(k, v)) -> Dict(k, v) {
   tree |> to_list() |> dict.from_list()
 }
 
+/// Creates a new tree with one entry inserted or updated using a given function.
+///
+/// If there was not an entry in the tree for the given key then the function gets None as its argument, otherwise it gets Some(value).
 pub fn upsert(
   in tree: BalancedTree(k, v),
   update key: k,
@@ -280,5 +341,8 @@ pub fn upsert(
   |> gb_trees_enter(key, _, tree)
 }
 
+/// Gets a list of all values in a given tree.
+/// 
+/// BalancedTrees are ordered. Values are guaranteed to be in min-to-max order based on their associated Keys.
 @external(erlang, "gb_trees", "values")
 pub fn values(tree: BalancedTree(k, v)) -> List(v)
