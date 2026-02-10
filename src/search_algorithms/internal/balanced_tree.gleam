@@ -25,8 +25,7 @@ type ErlangOption(a) {
 }
 
 // Section
-// external gb_trees
-// non-public
+// non-public, @external's to gb_trees
 
 @external(erlang, "gb_trees", "delete_any")
 fn gb_trees_delete_any(
@@ -40,6 +39,9 @@ fn gb_trees_enter(
   value: v,
   gb_tree: BalancedTree(k, v),
 ) -> BalancedTree(k, v)
+
+@external(erlang, "gb_trees", "from_orddict")
+pub fn gb_trees_from_orddict(list: List(#(k, v))) -> BalancedTree(k, v)
 
 @external(erlang, "gb_trees", "is_defined")
 fn gb_trees_is_defined(key: k, gb_tree: BalancedTree(k, v)) -> Bool
@@ -71,6 +73,7 @@ fn gb_trees_take_largest(
 
 // Section
 // Public Functions
+// Gleam friendly, includes @external's if function signature is already Gleam friendly
 
 /// Notice that this is rarely necessary, but can be motivated when many nodes have been deleted from the tree without further insertions. Rebalancing can then be forced to minimize lookup times, as deletion does not rebalance the tree.
 @external(erlang, "gb_trees", "balance")
@@ -81,6 +84,7 @@ pub fn combine(
   other: BalancedTree(k, v),
   with fun: fn(v, v) -> v,
 ) -> BalancedTree(k, v) {
+  // TODO: check efficiency of doing it this way
   other
   |> to_list()
   |> list.fold(tree, fn(acc, kvp) {
@@ -112,7 +116,6 @@ pub fn each(tree: BalancedTree(k, v), fun: fn(k, v) -> a) -> Nil {
   to_list(tree) |> list.each(fn(kvp) { fun(kvp.0, kvp.1) })
 }
 
-// filter
 pub fn filter(
   in tree: BalancedTree(k, v),
   keeping predicate: fn(k, v) -> Bool,
@@ -123,6 +126,7 @@ pub fn filter(
   |> balance()
 }
 
+/// fold in-order from min-to-max
 pub fn fold(
   over tree: BalancedTree(k, v),
   from initial: acc,
@@ -131,6 +135,7 @@ pub fn fold(
   to_list(tree) |> list.fold(initial, fn(acc, kvp) { fun(acc, kvp.0, kvp.1) })
 }
 
+/// fold in-order from max-to-min
 pub fn fold_right(
   over tree: BalancedTree(k, v),
   from initial: acc,
@@ -141,9 +146,15 @@ pub fn fold_right(
   |> list.fold(initial, fn(acc, kvp) { fun(acc, kvp.0, kvp.1) })
 }
 
-/// Warning: this wraps gb_trees.from_orddict(List), which panics if there are duplicate keys in List
-@external(erlang, "gb_trees", "from_orddict")
-pub fn from_list(list: List(#(k, v))) -> BalancedTree(k, v)
+pub fn from_dict(dict: Dict(k, v)) -> BalancedTree(k, v) {
+  dict |> dict.to_list() |> gb_trees_from_orddict()
+}
+
+pub fn from_list(list: List(#(k, v))) -> BalancedTree(k, v) {
+  // gb_trees_from_orddict panics if there are duplicate keys
+  // so to both remove duplicates, and mirror dict.from_list()'s behavior of "last one in the list", do dict.from_list() first
+  list |> dict.from_list() |> from_dict()
+}
 
 pub fn get(from gb_tree: BalancedTree(k, v), get key: k) -> Result(v, Nil) {
   case gb_trees_lookup(key, gb_tree) {
@@ -191,7 +202,16 @@ pub fn map_values(
   gb_trees_map(fun, tree)
 }
 
-// merge
+pub fn merge(
+  into tree: BalancedTree(k, v),
+  from new_entries: BalancedTree(k, v),
+) -> BalancedTree(k, v) {
+  // TODO: check efficiency of doing it this way
+  let tree_as_dict = to_dict(tree)
+  let new_entries_as_dict = to_dict(new_entries)
+  let merged = dict.merge(tree_as_dict, new_entries_as_dict)
+  from_dict(merged)
+}
 
 @external(erlang, "gb_trees", "empty")
 pub fn new() -> BalancedTree(k, v)
@@ -218,8 +238,6 @@ pub fn pop_min(
 
 @external(erlang, "gb_trees", "size")
 pub fn size(tree: BalancedTree(k, v)) -> Int
-
-// take
 
 @external(erlang, "gb_trees", "to_list")
 pub fn to_list(tree: BalancedTree(k, v)) -> List(#(k, v))
