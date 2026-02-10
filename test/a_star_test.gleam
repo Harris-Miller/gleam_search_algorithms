@@ -4,7 +4,7 @@ import gleam/list
 import gleam/string
 import gleeunit
 import gleeunit/should
-import search_algorithms/a_star
+import search_algorithms
 import simplifile
 import test_utils
 
@@ -61,7 +61,7 @@ pub fn a_star_test_climb_finds_expected_solution_test() {
     grid |> dict.to_list() |> list.find(fn(tuple) { tuple.1 == "E" })
 
   let assert Ok(#(total_cost, _)) =
-    a_star.a_star(
+    search_algorithms.a_star(
       get_next_points(point_heights),
       fn(_, _) { 1 },
       heuristic(end),

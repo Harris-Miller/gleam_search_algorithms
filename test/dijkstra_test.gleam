@@ -3,7 +3,7 @@ import gleam/list
 import gleam/set
 import gleeunit
 import gleeunit/should
-import search_algorithms/dijkstra
+import search_algorithms
 import simplifile
 import test_utils
 
@@ -40,7 +40,12 @@ pub fn dijkstra_cheese_search_finds_expected_solution_test() {
   let has_found_end = fn(p: #(Int, Int)) { p == end }
 
   let assert Ok(#(total_cost, _)) =
-    dijkstra.dijkstra(get_next_states, fn(_, _) { 1 }, has_found_end, start)
+    search_algorithms.dijkstra(
+      get_next_states,
+      fn(_, _) { 1 },
+      has_found_end,
+      start,
+    )
 
   // my correct part one solution for this day
   // got this solution originally using https://hackage-content.haskell.org/package/search-algorithms

@@ -1,6 +1,6 @@
 import gleeunit
 import gleeunit/should
-import search_algorithms/internal/search_container
+import internal/search_container
 
 pub fn main() {
   gleeunit.main()

@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
-import search_algorithms/internal/search_container.{type SearchContainer}
+import internal/search_container.{type SearchContainer}
 
 /// A Record that represents the current State of the search.
 /// 

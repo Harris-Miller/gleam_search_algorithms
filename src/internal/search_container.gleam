@@ -2,7 +2,7 @@ import gleam/deque.{type Deque}
 import gleam/list
 import gleam/option.{type Option}
 import gleam/result
-import search_algorithms/internal/balanced_tree.{type BalancedTree}
+import internal/balanced_tree.{type BalancedTree}
 
 pub opaque type SearchContainer(value) {
   Stack(List(value))
