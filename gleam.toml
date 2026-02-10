@@ -9,7 +9,7 @@ repository = { type = "github", user = "harris-miller", repo = "gleam_search_alg
 
 target = "erlang"
 
-internal_modules = ["search_algorithms/internal/*"]
+internal_modules = ["internal/*"]
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"
