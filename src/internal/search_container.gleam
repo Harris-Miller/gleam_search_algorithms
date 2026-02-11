@@ -4,10 +4,10 @@ import gleam/option.{type Option}
 import gleam/result
 import internal/balanced_tree.{type BalancedTree}
 
-pub opaque type SearchContainer(value) {
-  Stack(List(value))
-  Queue(Deque(value))
-  LIFOHeap(BalancedTree(Int, List(value)))
+pub opaque type SearchContainer(state) {
+  Stack(List(#(Int, state)))
+  Queue(Deque(#(Int, state)))
+  LIFOHeap(BalancedTree(Int, List(state)))
 }
 
 pub fn new_stack() {
@@ -23,46 +23,43 @@ pub fn new_lifo_heap() {
 }
 
 pub fn pop(
-  sc: SearchContainer(value),
-) -> Result(#(#(Int, value), SearchContainer(value)), Nil) {
+  sc: SearchContainer(state),
+) -> Result(#(#(Int, state), SearchContainer(state)), Nil) {
   case sc {
     Stack(list) -> {
       case list {
-        [head, ..tail] -> Ok(#(#(0, head), Stack(tail)))
+        [head, ..tail] -> Ok(#(head, Stack(tail)))
         [] -> Error(Nil)
       }
     }
     Queue(deque) -> {
-      deque.pop_front(deque)
-      |> result.map(fn(tuple) {
-        let #(value, deque) = tuple
-        #(#(0, value), Queue(deque))
-      })
+      deque
+      |> deque.pop_front()
+      |> result.map(fn(tuple) { #(tuple.0, Queue(deque)) })
     }
     LIFOHeap(tree) -> {
-      case balanced_tree.get_min(tree) {
-        Error(Nil) -> Error(Nil)
-        Ok(value) -> {
-          case value {
-            #(cost, [head]) -> {
-              let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
-              Ok(#(#(cost, head), next_heap))
-            }
-            #(cost, [head, ..tail]) -> {
-              let next_heap =
-                tree |> balanced_tree.insert(cost, tail) |> LIFOHeap()
-              Ok(#(#(cost, head), next_heap))
-            }
-            #(cost, []) -> {
-              // logically, this should be unreachable
-              // just in case, delete this min
-              let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
-              // and call pop again to get value at new min
-              pop(next_heap)
-            }
+      tree
+      |> balanced_tree.get_min()
+      |> result.try(fn(state) {
+        case state {
+          #(cost, [head]) -> {
+            let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
+            Ok(#(#(cost, head), next_heap))
+          }
+          #(cost, [head, ..tail]) -> {
+            let next_heap =
+              tree |> balanced_tree.insert(cost, tail) |> LIFOHeap()
+            Ok(#(#(cost, head), next_heap))
+          }
+          #(cost, []) -> {
+            // logically, this should be unreachable, but just in case...
+            // delete min
+            let next_heap = tree |> balanced_tree.delete(cost) |> LIFOHeap()
+            // and call pop again to get value at new min
+            pop(next_heap)
           }
         }
-      }
+      })
     }
   }
 }
@@ -73,8 +70,8 @@ pub fn push(
 ) -> SearchContainer(value) {
   let #(cost, value) = cost_value_pair
   case container {
-    Stack(list) -> value |> list.prepend(list, _) |> Stack()
-    Queue(queue) -> value |> deque.push_back(queue, _) |> Queue()
+    Stack(list) -> list.prepend(list, cost_value_pair) |> Stack()
+    Queue(queue) -> deque.push_back(queue, cost_value_pair) |> Queue()
     LIFOHeap(tree) -> {
       let handler = fn(opt: Option(List(value))) {
         case opt {

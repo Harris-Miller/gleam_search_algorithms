@@ -12,7 +12,7 @@ import internal/search_container.{type SearchContainer}
 /// 
 /// Properties:
 /// * `current` - the `state` tied to the "cost" it took to get there
-/// * `container` - The abstract data structure set by the type of search, used to `push` state, and `pop` back in a specific order
+/// * `search_container` - The abstract data structure set by the type of search, used to `push` state, and `pop` back in a specific order
 ///   * Implementations include a `Stack`, `Queue`, and `LIFOHeap`
 /// * `visited` - a `Set` of visited locations, key'd by `state_key`
 /// * `paths` - a collection of how we got to `state_key` by a list of `#(Int, state)`
@@ -23,8 +23,7 @@ import internal/search_container.{type SearchContainer}
 pub type SearchState(state_key, state) {
   SearchState(
     current: #(Int, state),
-    // Container takes state -> #(Int, state) internally
-    container: SearchContainer(state),
+    search_container: SearchContainer(state),
     visited: Set(state_key),
     paths: Dict(state_key, List(#(Int, state))),
   )
@@ -32,27 +31,27 @@ pub type SearchState(state_key, state) {
 
 /// recursively search through next states until end us found, or there are no more states to check
 pub fn search_until_found(
-  get_next_states: fn(value) -> Result(value, Nil),
-  has_found_end: fn(value) -> Bool,
-  value: value,
-) -> Result(value, Nil) {
-  case has_found_end(value) {
-    True -> Ok(value)
+  get_next_states: fn(state) -> Result(state, Nil),
+  has_found_end: fn(state) -> Bool,
+  state: state,
+) -> Result(state, Nil) {
+  case has_found_end(state) {
+    True -> Ok(state)
     False ->
-      get_next_states(value)
+      get_next_states(state)
       |> result.try(search_until_found(get_next_states, has_found_end, _))
   }
 }
 
 fn get_next_search_state(
-  is_better: fn(List(#(Int, value)), List(#(Int, value))) -> Bool,
-  make_key: fn(#(Int, value)) -> key,
-  get_next_states: fn(#(Int, value)) -> List(#(Int, value)),
-  current: SearchState(key, value),
-) -> Result(SearchState(key, value), Nil) {
+  is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
+  make_key: fn(#(Int, state)) -> key,
+  get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
+  current: SearchState(key, state),
+) -> Result(SearchState(key, state), Nil) {
   let update_queue_paths = fn(
-    queue_and_paths: #(SearchContainer(value), Dict(key, List(#(Int, value)))),
-    state: #(Int, value),
+    queue_and_paths: #(SearchContainer(state), Dict(key, List(#(Int, state)))),
+    state: #(Int, state),
   ) {
     let #(queue, paths) = queue_and_paths
     let key = make_key(state)
@@ -81,7 +80,7 @@ fn get_next_search_state(
     let next_states = get_next_states(current.current)
     list.fold(
       next_states,
-      #(current.container, current.paths),
+      #(current.search_container, current.paths),
       update_queue_paths,
     )
   }
@@ -116,18 +115,18 @@ fn get_next_search_state(
 /// a clever search that, based on the container type and the is_better function,
 /// can be used to do A*, Dijkstra, BFS, or DFS
 pub fn generalized_search(
-  container: SearchContainer(state),
-  make_key: fn(#(Int, state)) -> state_key,
-  is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
-  get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
-  has_found_end: fn(#(Int, state)) -> Bool,
-  initial_state: #(Int, state),
+  search_container search_container: SearchContainer(state),
+  make_key make_key: fn(#(Int, state)) -> state_key,
+  is_better is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
+  get_next_states get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
+  has_found_end has_found_end: fn(#(Int, state)) -> Bool,
+  initial_state initial_state: #(Int, state),
 ) -> Result(List(#(Int, state)), Nil) {
   let initial_key = make_key(initial_state)
   let initial_state =
     SearchState(
       initial_state,
-      container,
+      search_container,
       set.from_list([initial_key]),
       dict.from_list([#(initial_key, [])]),
     )
