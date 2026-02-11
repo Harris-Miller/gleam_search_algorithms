@@ -11,8 +11,7 @@ pub fn main() {
   gleeunit.main()
 }
 
-pub fn dijkstra_cheese_search_finds_expected_solution_test() {
-  // my puzzle input from https://adventofcode.com/2016/day/24
+pub fn breadth_first_test() {
   let assert Ok(content) =
     simplifile.read("./test/flat_files/cheese_search.txt")
 
@@ -37,16 +36,8 @@ pub fn dijkstra_cheese_search_finds_expected_solution_test() {
 
   let has_found_end = fn(p: #(Int, Int)) { p == end }
 
-  let assert Ok(#(total_cost, _)) =
-    search_algorithms.dijkstra(
-      get_next_states,
-      fn(_, _) { 1 },
-      has_found_end,
-      start,
-    )
+  let assert Ok(path) =
+    search_algorithms.breadth_first(get_next_states, has_found_end, start)
 
-  // my correct part one solution for this day
-  // got this solution originally using https://hackage-content.haskell.org/package/search-algorithms
-  // so if it is the same here, that should be enough to validate that my implementation is correct
-  total_cost |> should.equal(246)
+  path |> list.length |> should.equal(246)
 }

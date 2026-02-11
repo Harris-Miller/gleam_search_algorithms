@@ -35,7 +35,7 @@ pub fn pop(
     Queue(deque) -> {
       deque
       |> deque.pop_front()
-      |> result.map(fn(tuple) { #(tuple.0, Queue(deque)) })
+      |> result.map(fn(tuple) { #(tuple.0, Queue(tuple.1)) })
     }
     LIFOHeap(tree) -> {
       tree

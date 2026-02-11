@@ -6,10 +6,10 @@ import internal/search_container
 import internal/utils
 
 /// Breadth First Search
-pub fn breadth_first_search(
-  next: fn(state) -> List(state),
-  found: fn(state) -> Bool,
-  initial: state,
+pub fn breadth_first(
+  next next: fn(state) -> List(state),
+  found found: fn(state) -> Bool,
+  initial initial: state,
 ) -> Result(List(state), Nil) {
   generalized_search.generalized_search(
     search_container: search_container.new_queue(),
@@ -25,7 +25,7 @@ pub fn breadth_first_search(
 }
 
 /// Depth First Search
-pub fn depth_first_search(
+pub fn depth_first(
   next: fn(state) -> List(state),
   found: fn(state) -> Bool,
   initial: state,

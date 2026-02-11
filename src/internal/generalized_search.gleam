@@ -123,7 +123,7 @@ pub fn generalized_search(
   initial_state initial_state: #(Int, state),
 ) -> Result(List(#(Int, state)), Nil) {
   let initial_key = make_key(initial_state)
-  let initial_state =
+  let search_state =
     SearchState(
       initial_state,
       search_container,
@@ -137,7 +137,7 @@ pub fn generalized_search(
       fn(search_state: SearchState(state_key, state)) {
         has_found_end(search_state.current)
       },
-      initial_state,
+      search_state,
     )
 
   let get_steps = fn(search_state: SearchState(state_key, state)) {
