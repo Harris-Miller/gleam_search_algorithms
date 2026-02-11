@@ -1,6 +1,6 @@
 # https://gleam.run/writing-gleam/gleam-toml/.
 
-name = "search_algorithms"
+name = "search_algorithms_gleam"
 version = "0.1.0"
 description = "A collection of common Search Algorithms"
 
