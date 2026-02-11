@@ -111,7 +111,6 @@ pub fn dijkstra(
   dijkstra_generalized(get_next_states_packed, has_found_end, initial)
 }
 
-/// A*
 fn a_star_generalized(
   get_next_states_packed: fn(#(Int, #(state, Int))) ->
     List(#(Int, #(state, Int))),
@@ -136,14 +135,14 @@ fn a_star_generalized(
 
   let result =
     generalized_search.generalized_search(
-      search_container.new_lifo_heap(),
-      fn(packed_state: #(Int, #(state, Int))) { packed_state.1.0 },
-      utils.least_costly,
-      get_next_states_packed,
-      fn(packed_state: #(Int, #(state, Int))) {
+      search_container: search_container.new_lifo_heap(),
+      make_key: fn(packed_state: #(Int, #(state, Int))) { packed_state.1.0 },
+      is_better: utils.least_costly,
+      get_next_states: get_next_states_packed,
+      has_found_end: fn(packed_state: #(Int, #(state, Int))) {
         has_found_end(packed_state.1.0)
       },
-      #(approx_remaining_cost(initial), #(initial, 0)),
+      initial_state: #(approx_remaining_cost(initial), #(initial, 0)),
     )
 
   result.map(result, unpack)
@@ -177,6 +176,7 @@ pub fn a_star_assoc(
   )
 }
 
+/// A*
 pub fn a_star(
   get_next_states: fn(state) -> List(state),
   get_next_cost: fn(state, state) -> Int,

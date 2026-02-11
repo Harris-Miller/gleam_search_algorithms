@@ -4,9 +4,16 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 
+/// SearchContainer abstracts away the data-structure used to store yet-to-visit states
+/// Available constructors are
+/// * `Stack` - for depth_first
+/// * `Queue` - for breadth_first
+/// * `LIFOHeap` - for dijkstra and a_star
+/// All implement `push` and `pop`, allowing for generalized_search to not need to care about
+/// how the order in which data is stored and retrieved
 pub opaque type SearchContainer(state) {
-  Stack(List(#(Int, state)))
-  Queue(Deque(#(Int, state)))
+  Stack(List(state))
+  Queue(Deque(state))
   LIFOHeap(BalancedTree(Int, List(state)))
 }
 
@@ -22,20 +29,22 @@ pub fn new_lifo_heap() {
   LIFOHeap(balanced_tree.new())
 }
 
+/// For `pop` to work for all SearchContainer constructors, the tuple `#(Int, state)` is used
+/// `Stack` and `Queue` don't utilize these internally, and always set it to `0` in their returns
 pub fn pop(
-  sc: SearchContainer(state),
+  search_container: SearchContainer(state),
 ) -> Result(#(#(Int, state), SearchContainer(state)), Nil) {
-  case sc {
+  case search_container {
     Stack(list) -> {
       case list {
-        [head, ..tail] -> Ok(#(head, Stack(tail)))
+        [head, ..tail] -> Ok(#(#(0, head), Stack(tail)))
         [] -> Error(Nil)
       }
     }
     Queue(deque) -> {
       deque
       |> deque.pop_front()
-      |> result.map(fn(tuple) { #(tuple.0, Queue(tuple.1)) })
+      |> result.map(fn(tuple) { #(#(0, tuple.0), Queue(tuple.1)) })
     }
     LIFOHeap(tree) -> {
       tree
@@ -64,19 +73,23 @@ pub fn pop(
   }
 }
 
+/// For `push` to work for all SearchContainer constructors, the tuple `#(Int, state)` is used
+/// `Int` is only utilized by LIFOHeap, and represents "estimated remaining cost"
+/// Effectively making it a Priority Queue
+/// Stack and Queue ignore it
 pub fn push(
-  container: SearchContainer(value),
-  cost_value_pair: #(Int, value),
-) -> SearchContainer(value) {
-  let #(cost, value) = cost_value_pair
-  case container {
-    Stack(list) -> list.prepend(list, cost_value_pair) |> Stack()
-    Queue(queue) -> deque.push_back(queue, cost_value_pair) |> Queue()
+  search_container: SearchContainer(state),
+  cost_state_pair: #(Int, state),
+) -> SearchContainer(state) {
+  case search_container {
+    Stack(list) -> list.prepend(list, cost_state_pair.1) |> Stack()
+    Queue(queue) -> deque.push_back(queue, cost_state_pair.1) |> Queue()
     LIFOHeap(tree) -> {
-      let handler = fn(opt: Option(List(value))) {
+      let #(cost, state) = cost_state_pair
+      let handler = fn(opt: Option(List(state))) {
         case opt {
-          option.Some(list) -> [value, ..list]
-          option.None -> [value]
+          option.Some(list) -> [state, ..list]
+          option.None -> [state]
         }
       }
       balanced_tree.upsert(tree, cost, handler) |> LIFOHeap()
