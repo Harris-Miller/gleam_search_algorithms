@@ -1,7 +1,7 @@
+import balanced_tree
 import gleam/yielder
 import gleeunit
 import gleeunit/should
-import internal/balanced_tree
 
 pub fn main() {
   gleeunit.main()

@@ -1,6 +1,6 @@
+import balanced_tree
 import gleeunit
 import gleeunit/should
-import internal/balanced_tree
 
 pub fn main() {
   gleeunit.main()
