@@ -2,53 +2,58 @@ import gleam/function
 import gleam/list
 import gleam/result
 import internal/generalized_search
-import internal/search_container
+import internal/search_container.{type EstimateStatePair}
 import internal/utils
 
 /// Breadth First Search
 pub fn breadth_first(
-  next next: fn(state) -> List(state),
-  found found: fn(state) -> Bool,
-  initial initial: state,
+  get_next_states get_next_states: fn(state) -> List(state),
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) -> Result(List(state), Nil) {
   generalized_search.generalized_search(
     search_container: search_container.new_queue(),
     make_key: function.identity,
     is_better: fn(_, _) { False },
-    get_next_states: fn(state: #(Int, state)) {
-      next(state.1) |> list.map(fn(state) { #(0, state) })
+    get_next_states: fn(estimate_state_pair: EstimateStatePair(state)) {
+      get_next_states(estimate_state_pair.1)
+      |> list.map(fn(state) { #(0, state) })
     },
-    has_found_end: fn(state: #(Int, state)) { found(state.1) },
-    initial_state: #(0, initial),
+    is_found: fn(state: EstimateStatePair(state)) { is_found(state.1) },
+    initial_estimate_state_pair: #(0, initial_state),
   )
   |> result.map(fn(list) { list.map(list, fn(t) { t.1 }) })
 }
 
 /// Depth First Search
 pub fn depth_first(
-  next: fn(state) -> List(state),
-  found: fn(state) -> Bool,
-  initial: state,
+  get_next_states get_next_states: fn(state) -> List(state),
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) -> Result(List(state), Nil) {
   generalized_search.generalized_search(
     search_container: search_container.new_stack(),
     make_key: function.identity,
     is_better: fn(_, _) { True },
-    get_next_states: fn(state: #(Int, state)) {
-      next(state.1) |> list.map(fn(state) { #(0, state) })
+    get_next_states: fn(state: EstimateStatePair(state)) {
+      get_next_states(state.1) |> list.map(fn(state) { #(0, state) })
     },
-    has_found_end: fn(state: #(Int, state)) { found(state.1) },
-    initial_state: #(0, initial),
+    is_found: fn(state: EstimateStatePair(state)) { is_found(state.1) },
+    initial_estimate_state_pair: #(0, initial_state),
   )
   |> result.map(fn(list) { list.map(list, fn(t) { t.1 }) })
 }
 
 fn dijkstra_generalized(
-  get_next_states_packed: fn(#(Int, state)) -> List(#(Int, state)),
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  get_next_states_packed: fn(EstimateStatePair(state)) ->
+    List(EstimateStatePair(state)),
+  is_found: fn(state) -> Bool,
+  initial_state: state,
 ) -> Result(#(Int, List(state)), Nil) {
-  let unpack = fn(packed_states: List(#(Int, state))) -> #(Int, List(state)) {
+  let unpack = fn(packed_states: List(EstimateStatePair(state))) -> #(
+    Int,
+    List(state),
+  ) {
     case packed_states {
       [] -> #(0, [])
       packed_states -> {
@@ -63,11 +68,11 @@ fn dijkstra_generalized(
   let result =
     generalized_search.generalized_search(
       search_container: search_container.new_lifo_heap(),
-      make_key: fn(t: #(Int, state)) { t.1 },
+      make_key: fn(t: EstimateStatePair(state)) { t.1 },
       is_better: utils.least_costly,
       get_next_states: get_next_states_packed,
-      has_found_end: fn(t: #(Int, state)) { has_found_end(t.1) },
-      initial_state: #(0, initial),
+      is_found: fn(t: EstimateStatePair(state)) { is_found(t.1) },
+      initial_estimate_state_pair: #(0, initial_state),
     )
 
   result.map(result, unpack)
@@ -75,30 +80,34 @@ fn dijkstra_generalized(
 
 /// Dijkstra w/ associated transition costs
 pub fn dijkstra_assoc(
-  get_next_states: fn(state) -> List(#(state, Int)),
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  get_next_states get_next_states: fn(state) -> List(#(state, Int)),
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) {
-  let get_next_states_packed = fn(arg: #(Int, state)) -> List(#(Int, state)) {
+  let get_next_states_packed = fn(arg: EstimateStatePair(state)) -> List(
+    EstimateStatePair(state),
+  ) {
     let #(current_cost, current_state) = arg
     let next_states = get_next_states(current_state)
     next_states
-    |> list.map(fn(state_cost_tuple: #(state, Int)) -> #(Int, state) {
+    |> list.map(fn(state_cost_tuple: #(state, Int)) -> EstimateStatePair(state) {
       #(current_cost + state_cost_tuple.1, state_cost_tuple.0)
     })
   }
 
-  dijkstra_generalized(get_next_states_packed, has_found_end, initial)
+  dijkstra_generalized(get_next_states_packed, is_found, initial_state)
 }
 
 /// Dijkstra
 pub fn dijkstra(
-  get_next_states: fn(state) -> List(state),
-  get_next_cost: fn(state, state) -> Int,
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  get_next_states get_next_states: fn(state) -> List(state),
+  get_next_cost get_next_cost: fn(state, state) -> Int,
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) {
-  let get_next_states_packed = fn(arg: #(Int, state)) -> List(#(Int, state)) {
+  let get_next_states_packed = fn(arg: EstimateStatePair(state)) -> List(
+    EstimateStatePair(state),
+  ) {
     let #(current_cost, current_state) = arg
     let next_states = get_next_states(current_state)
     let next_costs =
@@ -108,17 +117,17 @@ pub fn dijkstra(
     list.zip(next_costs, next_states)
   }
 
-  dijkstra_generalized(get_next_states_packed, has_found_end, initial)
+  dijkstra_generalized(get_next_states_packed, is_found, initial_state)
 }
 
 fn a_star_generalized(
-  get_next_states_packed: fn(#(Int, #(state, Int))) ->
-    List(#(Int, #(state, Int))),
+  get_next_states_packed: fn(EstimateStatePair(#(state, Int))) ->
+    List(EstimateStatePair(#(state, Int))),
   approx_remaining_cost: fn(state) -> Int,
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  is_found: fn(state) -> Bool,
+  initial_state: state,
 ) -> Result(#(Int, List(state)), Nil) {
-  let unpack = fn(packed_states: List(#(Int, #(state, Int)))) -> #(
+  let unpack = fn(packed_states: List(EstimateStatePair(#(state, Int)))) -> #(
     Int,
     List(state),
   ) {
@@ -136,13 +145,18 @@ fn a_star_generalized(
   let result =
     generalized_search.generalized_search(
       search_container: search_container.new_lifo_heap(),
-      make_key: fn(packed_state: #(Int, #(state, Int))) { packed_state.1.0 },
+      make_key: fn(packed_state: EstimateStatePair(#(state, Int))) {
+        packed_state.1.0
+      },
       is_better: utils.least_costly,
       get_next_states: get_next_states_packed,
-      has_found_end: fn(packed_state: #(Int, #(state, Int))) {
-        has_found_end(packed_state.1.0)
+      is_found: fn(packed_state: EstimateStatePair(#(state, Int))) {
+        is_found(packed_state.1.0)
       },
-      initial_state: #(approx_remaining_cost(initial), #(initial, 0)),
+      initial_estimate_state_pair: #(approx_remaining_cost(initial_state), #(
+        initial_state,
+        0,
+      )),
     )
 
   result.map(result, unpack)
@@ -150,13 +164,13 @@ fn a_star_generalized(
 
 /// A* w/ associated transition costs
 pub fn a_star_assoc(
-  get_next_states: fn(state) -> List(#(state, Int)),
-  approx_remaining_cost: fn(state) -> Int,
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  get_next_states get_next_states: fn(state) -> List(#(state, Int)),
+  approx_remaining_cost approx_remaining_cost: fn(state) -> Int,
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) {
-  let get_next_states_packed = fn(arg: #(Int, #(state, Int))) -> List(
-    #(Int, #(state, Int)),
+  let get_next_states_packed = fn(arg: EstimateStatePair(#(state, Int))) -> List(
+    EstimateStatePair(#(state, Int)),
   ) {
     let #(_, #(current_state, current_cost)) = arg
     get_next_states(current_state)
@@ -171,21 +185,21 @@ pub fn a_star_assoc(
   a_star_generalized(
     get_next_states_packed,
     approx_remaining_cost,
-    has_found_end,
-    initial,
+    is_found,
+    initial_state,
   )
 }
 
 /// A*
 pub fn a_star(
-  get_next_states: fn(state) -> List(state),
-  get_next_cost: fn(state, state) -> Int,
-  approx_remaining_cost: fn(state) -> Int,
-  has_found_end: fn(state) -> Bool,
-  initial: state,
+  get_next_states get_next_states: fn(state) -> List(state),
+  get_next_cost get_next_cost: fn(state, state) -> Int,
+  approx_remaining_cost approx_remaining_cost: fn(state) -> Int,
+  is_found is_found: fn(state) -> Bool,
+  initial_state initial_state: state,
 ) -> Result(#(Int, List(state)), Nil) {
-  let get_next_states_packed = fn(arg: #(Int, #(state, Int))) -> List(
-    #(Int, #(state, Int)),
+  let get_next_states_packed = fn(arg: EstimateStatePair(#(state, Int))) -> List(
+    EstimateStatePair(#(state, Int)),
   ) {
     let #(_, #(current_state, current_cost)) = arg
     let next_states = get_next_states(current_state)
@@ -200,7 +214,7 @@ pub fn a_star(
   a_star_generalized(
     get_next_states_packed,
     approx_remaining_cost,
-    has_found_end,
-    initial,
+    is_found,
+    initial_state,
   )
 }

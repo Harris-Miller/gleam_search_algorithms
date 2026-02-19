@@ -2,7 +2,7 @@ import gleam/dict.{type Dict}
 import gleam/list
 import gleam/result
 import gleam/set.{type Set}
-import internal/search_container.{type SearchContainer}
+import internal/search_container.{type EstimateStatePair, type SearchContainer}
 
 /// A Record that represents the current State of the search.
 /// 
@@ -15,60 +15,67 @@ import internal/search_container.{type SearchContainer}
 /// * `search_container` - The abstract data structure set by the type of search, used to `push` state, and `pop` back in a specific order
 ///   * Implementations include a `Stack`, `Queue`, and `LIFOHeap`
 /// * `visited` - a `Set` of visited locations, key'd by `state_key`
-/// * `paths` - a collection of how we got to `state_key` by a list of `#(Int, state)`
+/// * `paths` - a collection of how we got to `state_key` by a list of `EstimateStatePair(state)`
 /// 
 /// Notes:
-/// The `Int` in `#(Int, state)` is the min-based priority needed for the LIFOHeap container.
+/// The `Int` in `EstimateStatePair(state)` is the min-based priority needed for the LIFOHeap container.
 /// It is unused by `Stack` and `Queue`, and will always be `0` for them
 pub type SearchState(state_key, state) {
   SearchState(
-    current: #(Int, state),
+    current: EstimateStatePair(state),
     search_container: SearchContainer(state),
     visited: Set(state_key),
-    paths: Dict(state_key, List(#(Int, state))),
+    paths: Dict(state_key, List(EstimateStatePair(state))),
   )
 }
 
 /// recursively search through next states until end us found, or there are no more states to check
 pub fn search_until_found(
   get_next_states: fn(state) -> Result(state, Nil),
-  has_found_end: fn(state) -> Bool,
+  is_found: fn(state) -> Bool,
   state: state,
 ) -> Result(state, Nil) {
-  case has_found_end(state) {
+  case is_found(state) {
     True -> Ok(state)
     False ->
       get_next_states(state)
-      |> result.try(search_until_found(get_next_states, has_found_end, _))
+      |> result.try(search_until_found(get_next_states, is_found, _))
   }
 }
 
 fn get_next_search_state(
-  is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
-  make_key: fn(#(Int, state)) -> key,
-  get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
-  current: SearchState(key, state),
+  is_better: fn(List(EstimateStatePair(state)), List(EstimateStatePair(state))) ->
+    Bool,
+  make_key: fn(EstimateStatePair(state)) -> key,
+  get_next_states: fn(EstimateStatePair(state)) ->
+    List(EstimateStatePair(state)),
+  search_state: SearchState(key, state),
 ) -> Result(SearchState(key, state), Nil) {
   let update_queue_paths = fn(
-    queue_and_paths: #(SearchContainer(state), Dict(key, List(#(Int, state)))),
-    state: #(Int, state),
+    search_container_and_paths: #(
+      SearchContainer(state),
+      Dict(key, List(EstimateStatePair(state))),
+    ),
+    estimate_state_pair: EstimateStatePair(state),
   ) {
-    let #(queue, paths) = queue_and_paths
-    let key = make_key(state)
+    let #(search_container, paths) = search_container_and_paths
+    let key = make_key(estimate_state_pair)
 
-    case set.contains(current.visited, key) {
-      True -> #(queue, paths)
+    case set.contains(search_state.visited, key) {
+      True -> #(search_container, paths)
       False -> {
         let assert Ok(steps_so_far) =
-          dict.get(current.paths, make_key(current.current))
-        let updated_queue = search_container.push(queue, state)
-        let updated_paths = dict.insert(paths, key, [state, ..steps_so_far])
+          dict.get(search_state.paths, make_key(search_state.current))
+        let updated_queue =
+          search_container.push(search_container, estimate_state_pair)
+        let updated_paths =
+          dict.insert(paths, key, [estimate_state_pair, ..steps_so_far])
 
         case dict.get(paths, key) {
           Ok(path) ->
-            case is_better(path, [state, ..steps_so_far]) {
+            case is_better(path, [estimate_state_pair, ..steps_so_far]) {
               True -> #(updated_queue, updated_paths)
-              False -> #(queue, paths)
+              False -> #(search_container, paths)
             }
           Error(Nil) -> #(updated_queue, updated_paths)
         }
@@ -76,30 +83,28 @@ fn get_next_search_state(
     }
   }
 
-  let new_queue_paths = fn() {
-    let next_states = get_next_states(current.current)
+  let #(new_search_container, new_paths) = {
+    let next_states = get_next_states(search_state.current)
     list.fold(
       next_states,
-      #(current.search_container, current.paths),
+      #(search_state.search_container, search_state.paths),
       update_queue_paths,
     )
   }
 
-  let #(new_queue, new_paths) = new_queue_paths()
-
-  new_queue
+  new_search_container
   |> search_container.pop()
-  |> result.map(fn(state_and_container) {
-    let #(state, container) = state_and_container
+  |> result.map(fn(tuple) {
+    let #(estimate_state_pair, search_container) = tuple
     SearchState(
-      state,
-      container,
-      set.insert(current.visited, make_key(state)),
+      estimate_state_pair,
+      search_container,
+      set.insert(search_state.visited, make_key(estimate_state_pair)),
       new_paths,
     )
   })
   |> result.try(fn(search_state) {
-    case set.contains(current.visited, make_key(search_state.current)) {
+    case set.contains(search_state.visited, make_key(search_state.current)) {
       True ->
         get_next_search_state(
           is_better,
@@ -116,16 +121,23 @@ fn get_next_search_state(
 /// can be used to do A*, Dijkstra, BFS, or DFS
 pub fn generalized_search(
   search_container search_container: SearchContainer(state),
-  make_key make_key: fn(#(Int, state)) -> state_key,
-  is_better is_better: fn(List(#(Int, state)), List(#(Int, state))) -> Bool,
-  get_next_states get_next_states: fn(#(Int, state)) -> List(#(Int, state)),
-  has_found_end has_found_end: fn(#(Int, state)) -> Bool,
-  initial_state initial_state: #(Int, state),
-) -> Result(List(#(Int, state)), Nil) {
-  let initial_key = make_key(initial_state)
+  make_key make_key: fn(EstimateStatePair(state)) -> state_key,
+  is_better is_better: fn(
+    List(EstimateStatePair(state)),
+    List(EstimateStatePair(state)),
+  ) ->
+    Bool,
+  get_next_states get_next_states: fn(EstimateStatePair(state)) ->
+    List(EstimateStatePair(state)),
+  is_found is_found: fn(EstimateStatePair(state)) -> Bool,
+  initial_estimate_state_pair initial_estimate_state_pair: EstimateStatePair(
+    state,
+  ),
+) -> Result(List(EstimateStatePair(state)), Nil) {
+  let initial_key = make_key(initial_estimate_state_pair)
   let search_state =
     SearchState(
-      initial_state,
+      initial_estimate_state_pair,
       search_container,
       set.from_list([initial_key]),
       dict.from_list([#(initial_key, [])]),
@@ -135,7 +147,7 @@ pub fn generalized_search(
     search_until_found(
       get_next_search_state(is_better, make_key, get_next_states, _),
       fn(search_state: SearchState(state_key, state)) {
-        has_found_end(search_state.current)
+        is_found(search_state.current)
       },
       search_state,
     )

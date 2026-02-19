@@ -4,6 +4,10 @@ import gleam/list
 import gleam/option.{type Option}
 import gleam/result
 
+/// #(estimated_remaining_cost: Int, state: state)
+pub type EstimateStatePair(state) =
+  #(Int, state)
+
 /// SearchContainer abstracts away the data-structure used to store yet-to-visit states
 /// Available constructors are
 /// * `Stack` - for depth_first
@@ -29,11 +33,11 @@ pub fn new_lifo_heap() {
   LIFOHeap(balanced_tree.new())
 }
 
-/// For `pop` to work for all SearchContainer constructors, the tuple `#(Int, state)` is used
-/// `Stack` and `Queue` don't utilize these internally, and always set it to `0` in their returns
+/// For `pop` to work for all SearchContainer constructors, type `EstimateStatePair(state)` is used for the value
+/// `Stack` and `Queue` don't utilize these internally, and always set estimate to `0`
 pub fn pop(
   search_container: SearchContainer(state),
-) -> Result(#(#(Int, state), SearchContainer(state)), Nil) {
+) -> Result(#(EstimateStatePair(state), SearchContainer(state)), Nil) {
   case search_container {
     Stack(list) -> {
       case list {
@@ -73,19 +77,17 @@ pub fn pop(
   }
 }
 
-/// For `push` to work for all SearchContainer constructors, the tuple `#(Int, state)` is used
-/// `Int` is only utilized by LIFOHeap, and represents "estimated remaining cost"
-/// Effectively making it a Priority Queue
-/// Stack and Queue ignore it
+/// For `push` to work for all SearchContainer constructors, type `EstimateStatePair(state)` is used for the value
+/// the estimate is only used by LIFOHeap, where this implementation effectively makes it a Priority Queue
 pub fn push(
   search_container: SearchContainer(state),
-  cost_state_pair: #(Int, state),
+  estimate_state_pair: EstimateStatePair(state),
 ) -> SearchContainer(state) {
   case search_container {
-    Stack(list) -> list.prepend(list, cost_state_pair.1) |> Stack()
-    Queue(queue) -> deque.push_back(queue, cost_state_pair.1) |> Queue()
+    Stack(list) -> list.prepend(list, estimate_state_pair.1) |> Stack()
+    Queue(queue) -> deque.push_back(queue, estimate_state_pair.1) |> Queue()
     LIFOHeap(tree) -> {
-      let #(cost, state) = cost_state_pair
+      let #(cost, state) = estimate_state_pair
       let handler = fn(opt: Option(List(state))) {
         case opt {
           option.Some(list) -> [state, ..list]
