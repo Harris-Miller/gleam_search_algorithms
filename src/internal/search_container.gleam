@@ -78,7 +78,7 @@ pub fn pop(
 }
 
 /// For `push` to work for all SearchContainer constructors, type `EstimateStatePair(state)` is used for the value
-/// the estimate is only used by LIFOHeap, where this implementation effectively makes it a Priority Queue
+/// the estimate is only used by LIFOHeap, the SearchContainer used by Dijkstra and A*
 pub fn push(
   search_container: SearchContainer(state),
   estimate_state_pair: EstimateStatePair(state),

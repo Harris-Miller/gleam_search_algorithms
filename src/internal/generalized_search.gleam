@@ -44,8 +44,7 @@ pub fn search_until_found(
 }
 
 fn get_next_search_state(
-  is_better: fn(List(EstimateStatePair(state)), List(EstimateStatePair(state))) ->
-    Bool,
+  is_better: fn(EstimateStatePair(state), EstimateStatePair(state)) -> Bool,
   make_key: fn(EstimateStatePair(state)) -> key,
   get_next_states: fn(EstimateStatePair(state)) ->
     List(EstimateStatePair(state)),
@@ -72,12 +71,15 @@ fn get_next_search_state(
           dict.insert(paths, key, [estimate_state_pair, ..steps_so_far])
 
         case dict.get(paths, key) {
-          Ok(path) ->
-            case is_better(path, [estimate_state_pair, ..steps_so_far]) {
+          Error(Nil) -> #(updated_queue, updated_paths)
+          Ok(path) -> {
+            // logically, paths will always contain at least one item, so this is safe
+            let assert [previous_estimate_state_pair, ..] = path
+            case is_better(previous_estimate_state_pair, estimate_state_pair) {
               True -> #(updated_queue, updated_paths)
               False -> #(search_container, paths)
             }
-          Error(Nil) -> #(updated_queue, updated_paths)
+          }
         }
       }
     }
@@ -122,10 +124,7 @@ fn get_next_search_state(
 pub fn generalized_search(
   search_container search_container: SearchContainer(state),
   make_key make_key: fn(EstimateStatePair(state)) -> state_key,
-  is_better is_better: fn(
-    List(EstimateStatePair(state)),
-    List(EstimateStatePair(state)),
-  ) ->
+  is_better is_better: fn(EstimateStatePair(state), EstimateStatePair(state)) ->
     Bool,
   get_next_states get_next_states: fn(EstimateStatePair(state)) ->
     List(EstimateStatePair(state)),
