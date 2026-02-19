@@ -7,8 +7,6 @@ A port of the Haskell's [Algorithm.Search](https://hackage-content.haskell.org/p
 
 Erlang only - depends on [gb_trees](https://www.erlang.org/doc/apps/stdlib/gb_trees.html). May look into using [External Gleam Fallbacks](https://tour.gleam.run/everything/#advanced-features-external-gleam-fallbacks) for Javascript. Or just port all of gb_trees directly to Gleam. It's not that complicated of a library.
 
-WIP. Expect sudden API changes until 1.0.0
-
 ```sh
 gleam add search_algorithms_gleam
 ```
@@ -26,16 +24,12 @@ Further documentation can be found at <https://hexdocs.pm/search_algorithms_glea
 
 ### Searches
 
+* `a_star`
+* `a_star_assoc`
 * `breadth_first`
 * `depth_first`
 * `dijkstra`
 * `dijkstra_assoc`
-* `a_star`
-* `a_star_assoc`
-
-#### Considering
-* Some common Heuristic functions such as cartesian and euclidean
-
 
 ## Development
 
